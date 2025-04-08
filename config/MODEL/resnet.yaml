@@ -1,0 +1,15 @@
+model:  
+  _target_: src.model._grid._resnet.ResNet
+  input_size: ${Channels}
+  output_size: ${Channels}
+  resblock_layers: 1
+  resblock_channels: 64
+  resblock_type: simple
+  padding: 1
+  padding_mode: circular
+  kernel_size: 3
+  activation: ReLU
+
+structure: grid
+wrapper: ${grid_wrapper}
+name: resnet

@@ -1,0 +1,11 @@
+model:
+  _target_: src.model._grid._neuralpde.NeuralPDE
+  input_dim: ${Channels}
+  hidden_channels: 64
+  hidden_layers: 3
+  solver: {'method': euler, 'options': {'step_size': 0.1}}
+  use_adjoint: False
+
+structure: grid
+wrapper: ${grid_wrapper}
+name: neuralPDE

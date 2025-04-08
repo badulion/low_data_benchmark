@@ -1,0 +1,12 @@
+model:
+  _target_: src.model._point.point_transformer.PointTransformerV3
+  in_channels: ${Channels}
+  dec_channels: [1, 64, 128, 256]
+  dec_num_head: [1, 4, 8, 16]
+  enable_flash: False
+  enc_patch_size: [128, 128, 128, 128, 128]
+  dec_patch_size: [128, 128, 128, 128]
+
+structure: cloud
+wrapper: ${point_wrapper}
+name: PTv3

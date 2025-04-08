@@ -1,0 +1,14 @@
+model:
+  _target_: src.model._grid._cnn.CNN
+  input_size: ${Channels}
+  output_size: ${Channels}
+  hidden_layers: 5
+  hidden_channels: 64
+  padding: same
+  padding_mode: circular
+  kernel_size: 3
+  activation: ReLU
+
+structure: grid
+wrapper: ${grid_wrapper}
+name: cnn

@@ -1,0 +1,12 @@
+data
+output
+env
+venv
+errors.txt
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.log

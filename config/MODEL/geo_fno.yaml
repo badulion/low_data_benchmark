@@ -1,0 +1,11 @@
+model:
+  _target_: src.model._point._fno.Geo_FNO
+  width: 32
+  modes: [8, 8]
+  channels: ${Channels}
+  grid_size: [15, 15]
+  num_blocks: 5
+
+structure: cloud
+wrapper: ${point_wrapper}
+name: geo_fno

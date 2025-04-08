@@ -1,0 +1,16 @@
+model:
+  _target_: src.model._point._grind.GrIND
+  prediction_net:
+    _target_: src.dynabench.model._grid.neuralpde.NeuralPDE
+    input_dim: ${Channels}
+    hidden_channels: 64
+    hidden_layers: 3
+    solver: {'method': 'euler', 'options': {'step_size': 0.05}}
+    use_adjoint: False
+  num_ks: 9
+  grid_resolution: 64
+  spatial_dim: 2
+
+structure: cloud
+wrapper: ${point_wrapper}
+name: grind

@@ -1,0 +1,13 @@
+model:
+  _target_: src._point._graphpde.GraphPDE
+  input_size: ${Channels}
+  lookback: ${lookback}
+  phi_hidden_size: 128
+  phi_hidden_layers: 4
+  gamma_hidden_size: 128
+  gamma_hidden_layers: 4
+  spatial_dimensions: 2
+
+structure: cloud
+wrapper: ${graph_wrapper}
+name: graphpde

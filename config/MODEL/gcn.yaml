@@ -1,0 +1,11 @@
+model:
+  _target_: src.model._point._gcn.GCN
+  num_convs: 5
+  in_features: ${Channels}
+  hidden_features: 64
+  dropout: 0.1
+  knn: 16
+
+structure: cloud
+wrapper: ${point_wrapper}
+name: gcn

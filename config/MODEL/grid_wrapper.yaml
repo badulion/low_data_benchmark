@@ -1,0 +1,3 @@
+_target_: src.model._utils.GridIterativeWrapper
+model: ${MODEL.model}
+batch_first: True

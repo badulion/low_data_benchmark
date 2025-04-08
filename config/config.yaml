@@ -1,0 +1,55 @@
+##################################################
+# PARAMETERS that need to be changed
+# - MODEL
+# - EQUATION
+# - RESOLUTION
+##################################################
+defaults:
+  - trainer: trainer
+  - dbiterator: dbiterator
+  - resolution: low
+  - equation: advection
+  - MODEL@grid_wrapper: grid_wrapper
+  - MODEL@point_wrapper: point_wrapper
+  - MODEL@graph_wrapper: graph_wrapper
+  - MODEL: feast
+  - _self_
+
+# Model
+version: 0:0
+wrapper: ${MODEL.wrapper}
+version_name: ${MODEL.name}:${version}
+Name: Dynabench${version_name}
+output_dir: output
+logdir: ${Name}
+
+# Data
+Equation: ${equation.name}
+Channels: ${equation.channel}
+Structure: ${MODEL.structure}
+Resolution: ${resolution.name}
+NPoints: ${resolution.nPoints}
+NGrid: ${resolution.nGrid}
+lookback: 1
+Base_path_data: data
+Batch_size: 16
+TrainRollout: 2
+TestRollout: 16
+Workers: 16
+
+# Training
+Epochs: 1
+LearningRate: 1e-3
+WeightDecay: 1e-6
+
+# Trainer
+ValCheckInterval: 0.5
+# -> Remove for final run
+test_batches: 10
+val_batches: 0.0 #1.0
+train_batches: 100
+
+
+hydra:
+  run:
+    dir: ./${output_dir}/hydra/${logdir}/${now:%Y-%m-%d}_${now:%H-%M-%S}

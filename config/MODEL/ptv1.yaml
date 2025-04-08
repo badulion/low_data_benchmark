@@ -1,0 +1,11 @@
+model:
+  _target_: src.model._point.point_transformer.PointTransformerV1
+  input_dim: ${Channels}
+  num_points: ${NPoints}
+  num_blocks: 3
+  num_neighbors: 16
+  transformer_dim: 512
+
+structure: cloud
+wrapper: ${point_wrapper}
+name: PTv1
