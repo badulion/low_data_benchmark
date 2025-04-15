@@ -2,8 +2,8 @@ model:
   _target_: src.model._point._feast.FeaStNet
   input_size: ${Channels}
   lookback: ${lookback}
-  hidden_size: 64
-  hidden_layers: 3
+  hidden_size: 190
+  hidden_layers: 5
   input_layer_heads: 10
   hidden_layer_heads: 10
   output_layer_heads: 10

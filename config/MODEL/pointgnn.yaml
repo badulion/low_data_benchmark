@@ -2,19 +2,19 @@ model:
   _target_: src.model._point._point_gnn.PointGNN
   input_size: ${Channels}
   lookback: ${lookback}
-  intermediate_hidden_size: 64
-  hidden_size: 64
-  encoder_nn_hidden_size: 64
+  intermediate_hidden_size: 200
+  hidden_size: 200
+  encoder_nn_hidden_size: 200
   encoder_nn_hidden_layers: 2
-  decoder_nn_hidden_size: 64
+  decoder_nn_hidden_size: 200
   decoder_nn_hidden_layers: 2
-  offset_nn_hidden_size: 64
+  offset_nn_hidden_size: 200
   offset_nn_hidden_layers: 2
-  local_nn_hidden_size: 64
+  local_nn_hidden_size: 200
   local_nn_hidden_layers: 2
-  global_nn_hidden_size: 64
+  global_nn_hidden_size: 200
   global_nn_hidden_layers: 2
-  hidden_layers: 4
+  hidden_layers: 5
   spatial_dimensions: 2
 
 structure: cloud

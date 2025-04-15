@@ -12,7 +12,7 @@ defaults:
   - MODEL@grid_wrapper: grid_wrapper
   - MODEL@point_wrapper: point_wrapper
   - MODEL@graph_wrapper: graph_wrapper
-  - MODEL: feast
+  - MODEL: cnn
   - _self_
 
 # Model
@@ -32,22 +32,23 @@ NPoints: ${resolution.nPoints}
 NGrid: ${resolution.nGrid}
 lookback: 1
 Base_path_data: data
-Batch_size: 16
+Batch_size: 32
 TrainRollout: 2
 TestRollout: 16
 Workers: 16
 
 # Training
-Epochs: 1
+device: gpu
+Epochs: 10
 LearningRate: 1e-3
 WeightDecay: 1e-6
 
 # Trainer
-ValCheckInterval: 0.5
+ValCheckInterval: 0.1
 # -> Remove for final run
-test_batches: 10
-val_batches: 0.0 #1.0
-train_batches: 100
+test_batches: 1.0
+val_batches: 1.0
+train_batches: 1.0
 
 
 hydra:

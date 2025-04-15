@@ -1,5 +1,5 @@
 model:
-  _target_: src._point._graphpde.GraphPDE
+  _target_: src.model._point._graphpde.GraphPDE
   input_size: ${Channels}
   lookback: ${lookback}
   phi_hidden_size: 128

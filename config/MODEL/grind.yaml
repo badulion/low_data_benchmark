@@ -1,10 +1,10 @@
 model:
   _target_: src.model._point._grind.GrIND
   prediction_net:
-    _target_: src.dynabench.model._grid.neuralpde.NeuralPDE
+    _target_: src.model._grid._neuralpde.NeuralPDE
     input_dim: ${Channels}
-    hidden_channels: 64
-    hidden_layers: 3
+    hidden_channels: 180
+    hidden_layers: 5
     solver: {'method': 'euler', 'options': {'step_size': 0.05}}
     use_adjoint: False
   num_ks: 9

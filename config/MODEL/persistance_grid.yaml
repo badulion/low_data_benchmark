@@ -1,0 +1,9 @@
+model:
+  _target_: src.model._baseline._baseline_persistance.BaselinePersistence_grid
+  input_size: ${Channels}
+  lookback: ${lookback}
+  spatial_dimensions: 2
+
+structure: grid
+wrapper: ${grid_wrapper}
+name: baseline

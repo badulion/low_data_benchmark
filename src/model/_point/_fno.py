@@ -74,7 +74,6 @@ class SpectralConv2d (nn.Module):
 
 
         # Multiply relevant Fourier modes
-        # print(u.shape, u_ft.shape)
         factor1 = self.compl_mul2d(u_ft[:, :, :self.modes1, :self.modes2], self.weights1)
         factor2 = self.compl_mul2d(u_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
 
@@ -188,9 +187,11 @@ class IPHI (nn.Module):
         self.fc3 = nn.Linear(4*self.width, 4*self.width)
         self.fc4 = nn.Linear(4*self.width, 2)
         self.activation = torch.tanh
-        self.center = torch.tensor([0.0001,0.0001]).reshape(1,1,2)
+        #self.center = torch.tensor([0.0001,0.0001]).reshape(1,1,2)
+        self.register_buffer("center", torch.tensor([0.0001, 0.0001]).reshape(1, 1, 2))
 
-        self.B = np.pi*torch.pow(2, torch.arange(0, self.width//4, dtype=torch.float)).reshape(1,1,1,self.width//4)
+        self.B_ = np.pi*torch.pow(2, torch.arange(0, self.width//4, dtype=torch.float)).reshape(1,1,1,self.width//4)
+        self.register_buffer("B", self.B_)
 
 
     def forward(self, x, code=None):
@@ -269,11 +270,11 @@ class Geo_FNO (nn.Module):
         self.fc0 = nn.Linear(channels, self.width)
 
         self.conv_in = SpectralConv2d(self.width, self.width, self.modes1, self.modes2, self.s1, self.s2)
-        self.conv = [SpectralConv2d(self.width, self.width, self.modes1, self.modes2) for i in range(num_blocks)]
+        self.conv = nn.ModuleList([SpectralConv2d(self.width, self.width, self.modes1, self.modes2) for i in range(num_blocks)])
         self.conv_out = SpectralConv2d(self.width, self.width, self.modes1, self.modes2, self.s1, self.s2)
-        self.w = [nn.Conv2d(self.width, self.width, 1) for i in range(num_blocks)]
+        self.w = nn.ModuleList([nn.Conv2d(self.width, self.width, 1) for i in range(num_blocks)])
         self.b_in = nn.Conv2d(2, self.width, 1)
-        self.b = [nn.Conv2d(2, self.width, 1) for i in range(num_blocks)]
+        self.b = nn.ModuleList([nn.Conv2d(2, self.width, 1) for i in range(num_blocks)])
         self.b_out = nn.Conv1d(2, self.width, 1)
 
         self.fc1 = nn.Linear(self.width, 128)

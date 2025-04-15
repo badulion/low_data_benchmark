@@ -71,7 +71,7 @@ class GCN(nn.Module):
         super(GCN, self).__init__()
 
         self.gc1 = GraphConvolution(in_features, hidden_features)
-        self.gcs = [GraphConvolution(hidden_features, hidden_features) for _ in range(num_convs-2)]
+        self.gcs = nn.ModuleList([GraphConvolution(hidden_features, hidden_features) for _ in range(num_convs-2)])
         self.gc2 = GraphConvolution(hidden_features, in_features)
         self.dropout = dropout
         self.knn = knn
@@ -93,19 +93,19 @@ class GCN(nn.Module):
 
         # adjacency matrix with padded nearest neighbors
         p_padded = torch.cat((p,
-                                p + torch.tensor([0, 1]),
-                                p + torch.tensor([1, 0]),
-                                p + torch.tensor([1, 1]),
-                                p + torch.tensor([0, -1]),
-                                p + torch.tensor([-1, 0]),
-                                p + torch.tensor([-1, -1]),
-                                p + torch.tensor([1, -1]),
-                                p + torch.tensor([-1, 1])
+                                p + torch.tensor([0, 1], device=p.device),
+                                p + torch.tensor([1, 0], device=p.device),
+                                p + torch.tensor([1, 1], device=p.device),
+                                p + torch.tensor([0, -1], device=p.device),
+                                p + torch.tensor([-1, 0], device=p.device),
+                                p + torch.tensor([-1, -1], device=p.device),
+                                p + torch.tensor([1, -1], device=p.device),
+                                p + torch.tensor([-1, 1], device=p.device)
                                 ), dim=1)
         p_knn = self._knn(p, p_padded, self.knn)
         p_knn = p_knn%p.shape[1]
         batch_size = p.size(0)
-        adj = torch.zeros(batch_size, p.size(1), p.size(1))
+        adj = torch.zeros(batch_size, p.size(1), p.size(1), device=p.device)
         for i in range(batch_size):
             adj[i, torch.arange(p.size(1)).unsqueeze(-1), p_knn[i]] = 1
             adj[i] = adj[i] + adj[i].T

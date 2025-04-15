@@ -1,36 +1,14 @@
-certifi
-charset-normalizer
-h5py
-idna
-requests
-tqdm
-urllib3
-
-cython
-setuptools
-wheel
-numpy
-requests
-tqdm
-h5py
-joblib
-matplotlib
-torch
-torchdiffeq
-py-pde
-sympy
 dynabench
-
+setuptools
+numpy==1.26.4
+tqdm
+torch==2.6.0
+torchdiffeq
 torch_geometric
-torch_cluster
-
 addict 
 spconv-cu118
-torch-scatter -f https://data.pyg.org/whl/torch-2.4.0+cu118.html
 
-# for training and tests
 pytorch-lightning
 hydra-core
 wandb
 tensorboard
-torchdiffeq

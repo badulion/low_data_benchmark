@@ -1,10 +1,10 @@
 model:
-  _target_: src.model._point.point_transformer.PointTransformerV1
+  _target_: src.model._point.point_transformer._v1.PointTransformerV1
   input_dim: ${Channels}
   num_points: ${NPoints}
   num_blocks: 3
   num_neighbors: 16
-  transformer_dim: 512
+  transformer_dim: 110
 
 structure: cloud
 wrapper: ${point_wrapper}

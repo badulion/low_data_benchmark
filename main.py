@@ -2,7 +2,6 @@
 # General start script for all models based on config #
 #######################################################
 
-## Train the Hypersolver + NeuralPDE
 import hydra
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
@@ -13,7 +12,6 @@ import pytorch_lightning as pl
 from torch import nn
 from typing import Any
 import os
-import sys
 
 from cProfile import Profile
 from pstats import SortKey, Stats
@@ -22,9 +20,8 @@ from torch.nn.functional import mse_loss
 from torch.optim import Adam
 
 from pytorch_lightning import LightningDataModule
+from pytorch_lightning.utilities.model_summary import summarize
 from torch.utils.data import DataLoader, random_split
-
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 class DynabenchDataset(torch.utils.data.Dataset):
     def __init__( 
@@ -97,17 +94,25 @@ class pl_wrapper(pl.LightningModule):
                  structure,
                  *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.save_hyperparameters('hparams')
-        self.save_hyperparameters('hparams_model')
+
         self.model = model
         self.lossfunc = lossfunc
         self.optimizer = optimizer
         self.structure = structure
+        
+        summary = summarize(self, max_depth=-1)
+        trainable_params = summary.trainable_parameters
+
+        self.save_hyperparameters({"trainable_parameters": trainable_params})
+        self.save_hyperparameters('hparams')
+
+        self._start = None
+        self._end = None
 
     def _step(self, batch):
         # extract number of steps
         x,y,p = batch
-        #animate_simulation([y[0,i,0].cpu().numpy() for i in range(y.shape[1])])
+
         x = x[:,0]
         steps = y.shape[1]
         # prediction steps
@@ -126,7 +131,12 @@ class pl_wrapper(pl.LightningModule):
         return loss, pred
     
     def training_step(self, batch, batch_idx):
+        self._start = torch.cuda.Event(enable_timing=True)
+        self._end = torch.cuda.Event(enable_timing=True)
+
+        self._start.record()
         loss, pred = self._step(batch)
+
         self.log('train_loss', loss[-1], prog_bar = True)
         return loss[-1]
 
@@ -136,31 +146,68 @@ class pl_wrapper(pl.LightningModule):
         return val_loss[-1]
     
     def test_step(self, batch, batch_idx):
-        # wallclock time measuring of inference
+        _start = torch.cuda.Event(enable_timing=True)
+        _end = torch.cuda.Event(enable_timing=True)
+
+        _start.record()
         loss, pred = self._step(batch)
+        _end.record()
+        torch.cuda.synchronize()
+        elapsed_time = _start.elapsed_time(_end)
+        self.log('test_time', elapsed_time)
+
         # log 1 step and 16 step loss seperatly
         for i in range(len(loss)):
             self.log(f'test_loss-{i+1}', loss[i])
         return loss[-1]
 
+    def optimizer_step(
+        self, epoch, batch_idx, optimizer, optimizer_closure,
+        on_tpu=False, using_native_amp=False, using_lbfgs=False
+    ):
+        optimizer.zero_grad()
+        optimizer_closure()
+        optimizer.step()
+
+        # End timing after optimizer step
+        self._end.record()
+        torch.cuda.synchronize()
+        total_time_ms = self._start.elapsed_time(self._end)
+
+        # Log total step time
+        self.log("train_step_ms", total_time_ms)
+
     def configure_optimizers(self):
         return self.optimizer
+
 
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def main(cfg : DictConfig) -> None:
 
     #wandbloggedin = wandb.login(key = f"{os.getenv('WANDBKEY')}", relogin=True)
 
+    print(cfg.MODEL.name)
+    print(cfg.resolution)
+
     model = instantiate(cfg.wrapper)
     datamodule = DynabenchDataModule(cfg)
-    optimizer = Adam(model.parameters(), lr=cfg.LearningRate, weight_decay=cfg.WeightDecay)
-    pl_model = pl_wrapper(hparams=cfg, hparams_model=cfg.MODEL, model=model, lossfunc=mse_loss, optimizer=optimizer, structure=cfg.Structure)
-    trainer = instantiate(cfg.trainer)
     
-    # train model
-    trainer.fit(model=pl_model, datamodule=datamodule, ckpt_path="last")
-    # test model
-    trainer.test(datamodule=datamodule, ckpt_path='best')
+    # if baseline -> perform only forward pass and mean
+    if 'baseline' in cfg.MODEL.name:
+        # skip training
+        # test model
+        optimizer = None
+        pl_model = pl_wrapper(hparams=cfg, hparams_model=cfg.MODEL, model=model, lossfunc=mse_loss, optimizer=optimizer, structure=cfg.Structure)
+        trainer = instantiate(cfg.trainer)
+        trainer.test(datamodule=datamodule, model=pl_model)
+    else:
+        optimizer = Adam(model.parameters(), lr=cfg.LearningRate, weight_decay=cfg.WeightDecay)
+        pl_model = pl_wrapper(hparams=cfg, hparams_model=cfg.MODEL, model=model, lossfunc=mse_loss, optimizer=optimizer, structure=cfg.Structure)
+        trainer = instantiate(cfg.trainer)
+        # train model
+        trainer.fit(model=pl_model, datamodule=datamodule, ckpt_path="last")
+        # test model
+        trainer.test(datamodule=datamodule, ckpt_path='best')
     
     wandb.finish()
 

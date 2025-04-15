@@ -1,5 +1,5 @@
 model:
-  _target_: src.model._point._pointnet.PointNet
+  _target_: src.model._point._point_net.PointNet
   input_size: ${Channels}
   lookback: ${lookback}
   intermediate_hidden_size: 64

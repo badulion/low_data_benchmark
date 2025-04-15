@@ -1,0 +1,9 @@
+model:
+  _target_: src.model._baseline._baseline_persistance.BaselinePersistence_cloud
+  input_size: ${Channels}
+  lookback: ${lookback}
+  spatial_dimensions: 2
+
+structure: cloud
+wrapper: ${point_wrapper}
+name: baseline

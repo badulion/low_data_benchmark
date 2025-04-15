@@ -1,6 +1,6 @@
 model:
   _target_: src.model._point._fno.Geo_FNO
-  width: 32
+  width: 75
   modes: [8, 8]
   channels: ${Channels}
   grid_size: [15, 15]

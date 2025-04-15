@@ -2,7 +2,7 @@ model:
   _target_: src.model._point._gat.GATNet
   input_size: ${Channels}
   lookback: ${lookback}
-  hidden_size: 128
+  hidden_size: 512
   hidden_layers: 4
   spatial_dimensions: 2
 

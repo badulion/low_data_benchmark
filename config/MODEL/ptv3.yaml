@@ -1,11 +1,16 @@
 model:
-  _target_: src.model._point.point_transformer.PointTransformerV3
+  _target_: src.model._point.point_transformer._v3.PointTransformerV3
   in_channels: ${Channels}
-  dec_channels: [1, 64, 128, 256]
-  dec_num_head: [1, 4, 8, 16]
+  stride: [2, 2] #[2, 2, 2, 2]
+  dec_depths: [2, 2] #[2, 2, 2, 2]
+  dec_channels: [1, 64] #[1, 64, 128, 256]
+  dec_num_head: [1, 4] #[1, 4, 8, 16]
   enable_flash: False
-  enc_patch_size: [128, 128, 128, 128, 128]
-  dec_patch_size: [128, 128, 128, 128]
+  enc_depths: [2, 2, 2] # [2, 2, 2, 6, 2]
+  enc_num_head: [2, 4, 8] #[2, 4, 8, 16, 32]
+  enc_channels: [32, 64, 128] #[32, 64, 128, 256, 512]
+  enc_patch_size: [128, 128, 128] #[128, 128, 128, 128, 128]
+  dec_patch_size: [128, 128] #[128, 128, 128, 128]
 
 structure: cloud
 wrapper: ${point_wrapper}
