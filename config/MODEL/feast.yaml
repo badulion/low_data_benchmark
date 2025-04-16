@@ -1,6 +1,7 @@
 model:
   _target_: src.model._point._feast.FeaStNet
-  input_size: ${Channels}
+  input_size: ${InChannels}
+  output_size: ${OutChannels}
   lookback: ${lookback}
   hidden_size: 190
   hidden_layers: 5
@@ -12,4 +13,4 @@ model:
 
 structure: cloud
 wrapper: ${graph_wrapper}
-name: gcn
+name: feast

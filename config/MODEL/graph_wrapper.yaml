@@ -1,3 +1,4 @@
 _target_: src.model._graph_wrapper.GraphIterativeWrapper
 model: ${MODEL.model}
 batch_first: True
+num_neighbors: 16

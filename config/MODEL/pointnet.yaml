@@ -1,6 +1,7 @@
 model:
   _target_: src.model._point._point_net.PointNet
-  input_size: ${Channels}
+  input_size: ${InChannels}
+  output_size: ${OutChannels}
   lookback: ${lookback}
   intermediate_hidden_size: 64
   hidden_size: 64

@@ -1,6 +1,7 @@
 model:
   _target_: src.model._point._graphpde.GraphPDE
-  input_size: ${Channels}
+  input_size: ${InChannels}
+  output_size: ${OutChannels}
   lookback: ${lookback}
   phi_hidden_size: 128
   phi_hidden_layers: 4

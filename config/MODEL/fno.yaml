@@ -3,7 +3,9 @@ model:
   n_layers: 3
   n_modes: [8,8]
   width: 64
-  channels: ${Channels}
+  in_channels: ${InChannels}
+  out_channels: ${OutChannels}
+  lookback: ${lookback}
 
 structure: grid
 wrapper: ${grid_wrapper}

@@ -8,32 +8,33 @@ defaults:
   - trainer: trainer
   - dbiterator: dbiterator
   - resolution: low
-  - equation: advection
+  - equation: burgers
   - MODEL@grid_wrapper: grid_wrapper
   - MODEL@point_wrapper: point_wrapper
   - MODEL@graph_wrapper: graph_wrapper
-  - MODEL: cnn
+  - MODEL: feast
   - _self_
 
 # Model
 version: 0:0
 wrapper: ${MODEL.wrapper}
 version_name: ${MODEL.name}:${version}
-Name: Dynabench${version_name}
+Name: Dynabench_${version_name}
 output_dir: output
 logdir: ${Name}
 
 # Data
 Equation: ${equation.name}
-Channels: ${equation.channel}
+InChannels: ${equation.channel}
+OutChannels: ${equation.channel}
 Structure: ${MODEL.structure}
 Resolution: ${resolution.name}
 NPoints: ${resolution.nPoints}
 NGrid: ${resolution.nGrid}
-lookback: 1
+lookback: 2
 Base_path_data: data
 Batch_size: 32
-TrainRollout: 2
+TrainRollout: 1
 TestRollout: 16
 Workers: 16
 

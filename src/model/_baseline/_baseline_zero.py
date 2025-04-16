@@ -1,14 +1,24 @@
 from torch import nn
 import torch
 
-class BaselineZero(nn.Module):
-    def __init__(self, input_size: int, lookback: int, spatial_dimensions: int) -> None:
+class BaselineZero_grid(nn.Module):
+    def __init__(self, input_size: int, output_size: int, lookback: int, spatial_dimensions: int) -> None:
         super().__init__()
         self.input_size = input_size
+        self.output_size = output_size
         self.lookback = lookback
         self.spatial_dimensions = spatial_dimensions
 
-    def forward(self, data):
-        x, pos, edge_index = data.x, data.pos, data.edge_index
-        data.x = torch.zeros_like(x[:, -self.input_size:])
-        return data
+    def forward(self, x):
+        return torch.zeros_like(x[:,-self.output_size:])
+    
+class BaselineZero_cloud(nn.Module):
+    def __init__(self, input_size: int, output_size: int, lookback: int, spatial_dimensions: int) -> None:
+        super().__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+        self.lookback = lookback
+        self.spatial_dimensions = spatial_dimensions
+
+    def forward(self, x, p):
+        return torch.zeros_like(x[:,-self.output_size:])

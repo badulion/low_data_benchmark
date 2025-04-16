@@ -794,6 +794,8 @@ class PointTransformerV3(PointModule):
     def __init__(
         self,
         in_channels=1,
+        out_channels=1,
+        lookback=1,
         order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 6, 2),
@@ -824,11 +826,13 @@ class PointTransformerV3(PointModule):
         pdnorm_affine=True,
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ):
+        self.out_channels = out_channels
         super().__init__()
         self.num_stages = len(enc_depths)
         self.order = [order] if isinstance(order, str) else order
         self.cls_mode = cls_mode
         self.shuffle_orders = shuffle_orders
+        dec_channels[0] = out_channels ### This has changed due to the lookback
 
         assert self.num_stages == len(stride) + 1
         assert self.num_stages == len(enc_depths)
@@ -867,7 +871,7 @@ class PointTransformerV3(PointModule):
         act_layer = nn.GELU
 
         self.embedding = Embedding(
-            in_channels=in_channels,
+            in_channels=in_channels*lookback,
             embed_channels=enc_channels[0],
             norm_layer=bn_layer,
             act_layer=act_layer,
@@ -994,5 +998,5 @@ class PointTransformerV3(PointModule):
         point = self.enc(point)
         if not self.cls_mode:
             point = self.dec(point)
-        y = torch.reshape(point.feat, x.shape)
+        y = torch.reshape(point.feat, (x.shape[0], x.shape[1], self.out_channels))
         return y

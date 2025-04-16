@@ -26,7 +26,8 @@ class Dynamics(MessagePassing):
 
 class GraphPDE(nn.Module):
     def __init__(self, 
-                 input_size, 
+                 input_size,
+                 output_size,
                  lookback, 
                  phi_hidden_size, 
                  phi_hidden_layers, 
@@ -49,7 +50,7 @@ class GraphPDE(nn.Module):
                        hidden_layers=phi_hidden_layers)
 
         self.gamma = MLP(input_size=input_size*lookback+message_dimension, 
-                         output_size=input_size, 
+                         output_size=output_size, 
                          hidden_size=gamma_hidden_size, 
                          hidden_layers=gamma_hidden_layers)
         

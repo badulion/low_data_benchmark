@@ -40,9 +40,10 @@ class PointIterativeWrapper(torch.nn.Module):
         rollout = []
 
         for t in t_eval:
-            x = self.model(x, p)
-            x = x.squeeze(dim=1)
-            rollout.append(x)
+            x_ = x.view(x.shape[0], x.shape[2], x.shape[1]*x.shape[3])
+            x_ = self.model(x_, p)
+            x = torch.cat((x[:,1:],x_.view(x.shape[0], 1, x.shape[2], x_.shape[-1])), dim=1)
+            rollout.append(x_)
 
         dim = 1 if self.batch_first else 0
         return torch.stack(rollout, dim=dim)
@@ -85,9 +86,10 @@ class GridIterativeWrapper(torch.nn.Module):
         rollout = []
 
         for t in t_eval:
-            x = self.model(x)
-            x = x.squeeze(dim=2)
-            rollout.append(x)
+            x_ = x.view(x.shape[0], x.shape[1]*x.shape[2], x.shape[3], x.shape[4])
+            x_ = self.model(x_)
+            x = torch.cat((x[:,1:],x_.view(x.shape[0], 1, x.shape[2], x.shape[3], x.shape[4])), dim=1)
+            rollout.append(x_)
 
         dim = 1 if self.batch_first else 0
         return torch.stack(rollout, dim=dim)

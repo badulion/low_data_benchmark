@@ -2,6 +2,7 @@ data
 output
 env
 venv
+sbatch_jobs
 errors.txt
 __pycache__
 *.pyc

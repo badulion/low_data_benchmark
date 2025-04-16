@@ -1,6 +1,8 @@
 model:
   _target_: src.model._point.point_transformer._v1.PointTransformerV1
-  input_dim: ${Channels}
+  input_dim: ${InChannels}
+  output_dim: ${OutChannels}
+  lookback: ${lookback}
   num_points: ${NPoints}
   num_blocks: 3
   num_neighbors: 16

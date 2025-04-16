@@ -1,12 +1,10 @@
 model:
-  _target_: src.model._point._gat.GATNet
+  _target_: src.model._baseline._baseline_zero.BaselineZero_cloud
   input_size: ${InChannels}
   output_size: ${OutChannels}
   lookback: ${lookback}
-  hidden_size: 512
-  hidden_layers: 4
   spatial_dimensions: 2
 
 structure: cloud
-wrapper: ${graph_wrapper}
-name: gat
+wrapper: ${point_wrapper}
+name: baseline_zero

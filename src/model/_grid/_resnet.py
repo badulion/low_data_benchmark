@@ -139,6 +139,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  input_size: int, 
                  output_size: int,
+                 lookback: int,
                  resblock_layers: int = 1,
                  resblock_channels: int = 64,
                  resblock_type: str = 'simple',
@@ -155,7 +156,7 @@ class ResNet(nn.Module):
         else:
             raise ValueError(f"Unknown resblock type: {resblock_type}")
         
-        self.input_layer = nn.Conv2d(input_size, resblock_channels, kernel_size, padding=padding, padding_mode=padding_mode)
+        self.input_layer = nn.Conv2d(input_size * lookback, resblock_channels, kernel_size, padding=padding, padding_mode=padding_mode)
         self.resblocks = nn.ModuleList([ _ResBlock(channels=resblock_channels, padding=padding, padding_mode=padding_mode, kernel_size=kernel_size, activation=activation) for _ in range(resblock_layers)])
         self.output_layer = nn.Conv2d(resblock_channels, output_size, kernel_size, padding=padding, padding_mode=padding_mode)
         self.activation = getattr(nn, activation)()

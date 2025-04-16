@@ -1,7 +1,8 @@
 model:  
   _target_: src.model._grid._resnet.ResNet
-  input_size: ${Channels}
-  output_size: ${Channels}
+  input_size: ${InChannels}
+  output_size: ${OutChannels}
+  lookback: ${lookback}
   resblock_layers: 5
   resblock_channels: 512
   resblock_type: simple

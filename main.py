@@ -16,7 +16,7 @@ import os
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from torch.nn.functional import mse_loss
+from torch.nn.functional import mse_loss, rms_norm, l1_loss
 from torch.optim import Adam
 
 from pytorch_lightning import LightningDataModule
@@ -113,7 +113,7 @@ class pl_wrapper(pl.LightningModule):
         # extract number of steps
         x,y,p = batch
 
-        x = x[:,0]
+        #x = x[:,0]
         steps = y.shape[1]
         # prediction steps
         t = torch.arange(0, steps, device=batch[0].device)
@@ -128,29 +128,37 @@ class pl_wrapper(pl.LightningModule):
         for i in range(pred.shape[1]):
             loss.append(self.lossfunc(pred[:,i], y[:,i]))
 
-        return loss, pred
+        loss_mse = loss[-1]  # Assuming loss[0] is mse
+        loss_l1 = l1_loss(pred[:,-1], y[:,-1])
+        loss_rmse = torch.sqrt(loss_mse)
+
+        return loss, loss_mse, loss_l1, loss_rmse, pred
     
     def training_step(self, batch, batch_idx):
         self._start = torch.cuda.Event(enable_timing=True)
         self._end = torch.cuda.Event(enable_timing=True)
 
         self._start.record()
-        loss, pred = self._step(batch)
+        loss, loss_mse, loss_l1, loss_rmse, pred = self._step(batch)
 
-        self.log('train_loss', loss[-1], prog_bar = True)
-        return loss[-1]
+        self.log('train_loss', loss_mse, prog_bar=True)
+        self.log('train_loss_rmse', loss_rmse)
+        self.log('train_loss_l1', loss_l1)
+        return loss_mse
 
     def validation_step(self, batch, batch_idx):
-        val_loss, pred = self._step(batch)
-        self.log("val_loss", val_loss[-1], prog_bar=True)
-        return val_loss[-1]
+        loss, loss_mse, loss_l1, loss_rmse, pred = self._step(batch)
+        self.log("val_loss", loss_mse, prog_bar=True)
+        self.log("val_loss_rmse", loss_rmse)
+        self.log("val_loss_l1", loss_l1)
+        return loss_mse
     
     def test_step(self, batch, batch_idx):
         _start = torch.cuda.Event(enable_timing=True)
         _end = torch.cuda.Event(enable_timing=True)
 
         _start.record()
-        loss, pred = self._step(batch)
+        loss, loss_mse, loss_l1, loss_rmse, pred = self._step(batch)
         _end.record()
         torch.cuda.synchronize()
         elapsed_time = _start.elapsed_time(_end)
@@ -159,7 +167,7 @@ class pl_wrapper(pl.LightningModule):
         # log 1 step and 16 step loss seperatly
         for i in range(len(loss)):
             self.log(f'test_loss-{i+1}', loss[i])
-        return loss[-1]
+        return loss_mse
 
     def optimizer_step(
         self, epoch, batch_idx, optimizer, optimizer_closure,
@@ -184,7 +192,9 @@ class pl_wrapper(pl.LightningModule):
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def main(cfg : DictConfig) -> None:
 
-    #wandbloggedin = wandb.login(key = f"{os.getenv('WANDBKEY')}", relogin=True)
+    # wandb_key = f"{os.getenv('WANDBKEY')}"
+    # wandb_key = "6813c95f67c8b605e828ee3aba39eeec4b0ebad4"
+    # wandbloggedin = wandb.login(key = wandb_key, relogin=True)
 
     print(cfg.MODEL.name)
     print(cfg.resolution)

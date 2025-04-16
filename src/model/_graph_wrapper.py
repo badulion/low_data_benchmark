@@ -35,20 +35,30 @@ class GraphIterativeWrapper(torch.nn.Module):
         self.batch_first = batch_first
         self.k = num_neighbors
 
-    def _pad_points(self, points):
+    def _make_data(self, x, points):
 
         points_padded = torch.cat((points,
-                        points + torch.tensor([0, 1]),
-                        points + torch.tensor([1, 0]),
-                        points + torch.tensor([1, 1]),
-                        points + torch.tensor([0, -1]),
-                        points + torch.tensor([-1, 0]),
-                        points + torch.tensor([-1, -1]),
-                        points + torch.tensor([1, -1]),
-                        points + torch.tensor([-1, 1])
+                        points + torch.tensor([0, 1], device=points.device),
+                        points + torch.tensor([1, 0], device=points.device),
+                        points + torch.tensor([1, 1], device=points.device),
+                        points + torch.tensor([0, -1], device=points.device),
+                        points + torch.tensor([-1, 0], device=points.device),
+                        points + torch.tensor([-1, -1], device=points.device),
+                        points + torch.tensor([1, -1], device=points.device),
+                        points + torch.tensor([-1, 1], device=points.device)
                         ), dim=1)
         
-        return points_padded
+        transformation = KNNGraph(k=self.k)
+        data_list = []
+        for i in range(x.shape[0]):
+            x_graph = Data(x=torch.cat((x[i],)*9, dim=0), pos=points_padded[i])
+            x_graph = transformation(x_graph)
+            x_graph.x = x_graph.x[:x.shape[1]]
+            x_graph.pos = x_graph.pos[:x.shape[1]]
+            x_graph.edge_index = x_graph.edge_index[:,:x.shape[1]*self.k] % x.shape[1]
+            data_list.append(x_graph)
+        
+        return Batch.from_data_list(data_list)
 
 
     def forward(self, 
@@ -58,23 +68,27 @@ class GraphIterativeWrapper(torch.nn.Module):
         
         rollout = []
 
-        # data [x, pos, edge_index]
-        # create pyg graphs -> knn with padding??
-        transformation = KNNGraph(k=self.k)
-        data_list = []
-        for i in range(x.shape[0]):
-            x_graph = Data(x=x[i], pos=p[i])
-            x_graph = transformation(x_graph)
-            data_list.append(x_graph)
+        x_shape = x.shape
 
-        data = Batch.from_data_list(data_list)
+        x = x.view(x_shape[0], x_shape[2], x_shape[1]*x_shape[3])
+
+        data = self._make_data(x, p)
 
         for t in t_eval:
             data = self.model(data)
-            #x = x.squeeze(dim=1)
-            # get batches back
-            x = data.x.view(x.shape)
-            rollout.append(x)
+            dl = Batch.to_data_list(data)
+
+            x_list = []
+            x = x.view(x_shape[0], x_shape[1], x_shape[2], x_shape[3])
+            for i in range(len(dl)):
+                tmp = torch.cat((x[i,1:], torch.unsqueeze(dl[i].x,dim=0)), dim=0)
+                dl[i].x = tmp.view(x_shape[2], x_shape[1]*x_shape[3])
+                x_list.append(tmp.view(x_shape[2], x_shape[1]*x_shape[3]))
+
+            x = torch.stack(x_list, dim=0)
+            data = Batch.from_data_list(dl)
+            x_ = x.view(x_shape[0], x_shape[1], x_shape[2], x_shape[3])[:,-1]
+            rollout.append(x_)
 
         dim = 1 if self.batch_first else 0
         return torch.stack(rollout, dim=dim)

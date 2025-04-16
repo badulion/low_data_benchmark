@@ -1,5 +1,5 @@
 model:
-  _target_: src.model._baseline._baseline_persistance.BaselinePersistence_grid
+  _target_: src.model._baseline._baseline_zero.BaselineZero_grid
   input_size: ${InChannels}
   output_size: ${OutChannels}
   lookback: ${lookback}
@@ -7,4 +7,4 @@ model:
 
 structure: grid
 wrapper: ${grid_wrapper}
-name: baseline_persistance
+name: baseline_zero
