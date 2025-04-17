@@ -2,11 +2,10 @@ model:
   _target_: src.model._point._graphpde.GraphPDE
   input_size: ${InChannels}
   output_size: ${OutChannels}
-  lookback: ${lookback}
-  phi_hidden_size: 128
-  phi_hidden_layers: 4
-  gamma_hidden_size: 128
-  gamma_hidden_layers: 4
+  phi_hidden_size: 512
+  phi_hidden_layers: 5
+  gamma_hidden_size: 512
+  gamma_hidden_layers: 5
   spatial_dimensions: 2
 
 structure: cloud

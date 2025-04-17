@@ -92,3 +92,4 @@ class GraphIterativeWrapper(torch.nn.Module):
 
         dim = 1 if self.batch_first else 0
         return torch.stack(rollout, dim=dim)
+  

@@ -2,9 +2,8 @@ model:
   _target_: src.model._point._gat.GATNet
   input_size: ${InChannels}
   output_size: ${OutChannels}
-  lookback: ${lookback}
   hidden_size: 512
-  hidden_layers: 4
+  hidden_layers: 5
   spatial_dimensions: 2
 
 structure: cloud

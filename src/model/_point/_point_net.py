@@ -6,7 +6,6 @@ class PointNet(nn.Module):
     def __init__(self, 
                  input_size,
                  output_size,
-                 lookback, 
                  intermediate_hidden_size,
                  hidden_size, 
                  local_nn_hidden_size,
@@ -19,11 +18,10 @@ class PointNet(nn.Module):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.lookback = lookback
         self.hidden_size = hidden_size
         self.hidden_layers = hidden_layers
 
-        self.input_layer = PointNetConv(local_nn=MLP(input_size=input_size*lookback+spatial_dimensions, output_size=intermediate_hidden_size, hidden_size=local_nn_hidden_size, hidden_layers=local_nn_hidden_layers), 
+        self.input_layer = PointNetConv(local_nn=MLP(input_size=input_size+spatial_dimensions, output_size=intermediate_hidden_size, hidden_size=local_nn_hidden_size, hidden_layers=local_nn_hidden_layers), 
                                         global_nn=MLP(input_size=intermediate_hidden_size, output_size=hidden_size, hidden_size=global_nn_hidden_size, hidden_layers=global_nn_hidden_layers))
 
         self.hidden_layers = nn.ModuleList([

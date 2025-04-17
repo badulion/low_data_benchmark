@@ -4,9 +4,8 @@ model:
     _target_: src.model._grid._neuralpde.NeuralPDE
     input_dim: ${InChannels}
     output_dim: ${OutChannels}
-    lookback: ${lookback}
-    hidden_channels: 180
-    hidden_layers: 5
+    hidden_channels: 256
+    hidden_layers: 3
     solver: {'method': 'euler', 'options': {'step_size': 0.05}}
     use_adjoint: False
   num_ks: 9

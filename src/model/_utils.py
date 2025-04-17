@@ -1,24 +1,30 @@
 import torch
 
-from typing import List
+from typing import List, Optional
 
-class PointIterativeWrapper(torch.nn.Module):
+import einops
+
+from torch_geometric.data import Data, Batch
+from torch_geometric.transforms import KNNGraph
+
+
+class RolloutWrapper(torch.nn.Module):
     """
-    Wrapper class for iterative point-based model evaluation.
+    Wrapper class for iterative model evaluation.
+    This class is designed to perform iterative evaluation of models by calling the model multiple times at different time points.
+    It can be used for both point-based and grid-based models.
 
     Parameters
     ----------
     model : torch.nn.Module
         The model to be wrapped and iteratively evaluated.
     batch_first : bool, default True
-        If True, the first dimension of the input tensor is considered as the batch dimension.
+        If True, the first dimension of the input tensor is considered as the batch dimension. If False, the first dimension is the rollout dimension.
+    feature_dim: int, default -1
+        The id of the feature dimension. 
+    lookback_dim: int, default 1
+        The id of the lookback dimension. 
 
-    Attributes
-    ----------
-    model : torch.nn.Module
-        The wrapped model.
-    batch_first : bool
-        Indicates if the first dimension of the input tensor is the batch dimension.
 
     Methods
     -------
@@ -27,69 +33,211 @@ class PointIterativeWrapper(torch.nn.Module):
     """
     def __init__(self, 
                  model,
-                 batch_first: bool = True):
+                 structure: str = 'grid',
+                 batch_first: bool = True,
+                 lookback_dim: int = 1):
         super().__init__()
+        if structure not in ['grid', 'cloud']:
+            raise ValueError("Structure must be either 'grid' or 'cloud'")
+        self.structure = structure
         self.model = model
         self.batch_first = batch_first
-
+        
+        self.feature_dim = 2 if structure == 'grid' else -1
+        
+        self.lookback_dim = lookback_dim
+        self.alphabet = 'abcdefghijklmnopqrstuvwxyz'
+        
     def forward(self, 
+                x: torch.Tensor, # features
+                p: Optional[torch.Tensor] = None, # point coordinates
+                t_eval: List[float] = [1]):
+        
+        rollout = []
+        for t in t_eval:
+            x_stacked_lookback = einops.rearrange(x, self._einops_stack_lookback_expr()) # Merge lookback with the feature dimension
+            
+            args = (x_stacked_lookback,) if self.structure=="grid" else (x_stacked_lookback, p)
+            x_single = self.model(*args)
+            
+            x_single_unstacked_loockback = einops.rearrange(x_single, "batch ... -> batch () ...") # add dummy dim for lookback in pred
+            x = torch.cat([x[:, 1:], x_single_unstacked_loockback], dim=self.lookback_dim)
+            
+            rollout.append(x_single)
+            
+            
+        rollout_dim = 1 if self.batch_first else 0
+        return torch.stack(rollout, dim=rollout_dim)
+            
+    def _einops_stack_lookback_expr(self):
+        if self.structure == "grid":
+            expr = 'batch lookback feature ... -> batch (lookback feature) ...'
+        elif self.structure == "cloud":
+            # Generate einops expression for cloud structure
+            expr = 'batch lookback points feature -> batch points (lookback feature)'
+        else:
+            raise ValueError("Structure must be either 'grid' or 'cloud'")    
+        return expr
+
+    def _einops_unstack_loockback_expr(self):
+        if self.structure == "grid":
+            expr = 'batch (lookback feature) ... -> batch lookback feature ...'
+        elif self.structure == "cloud":
+            # Generate einops expression for cloud structure
+            expr = 'batch points (lookback feature) -> batch lookback points feature'
+        else:
+            raise ValueError("Structure must be either 'grid' or 'cloud'")    
+        
+        return expr
+        
+
+class CloudRolloutWrapper(RolloutWrapper):
+    """
+        Alias for `dynabench.model.utils.RolloutWrapper with structure="cloud"
+    """
+    def __init__(self,
+                 model,
+                 batch_first: bool = True,
+                 lookback_dim: int = 1):
+        super().__init__(model=model, 
+                         structure="cloud", 
+                         batch_first=batch_first,
+                         lookback_dim=lookback_dim)
+        
+class GridRolloutWrapper(RolloutWrapper):
+    """
+        Alias for `dynabench.model.utils.RolloutWrapper with structure="grid"
+    """
+    def __init__(self,
+                 model,
+                 batch_first: bool = True,
+                 lookback_dim: int = 1):
+        super().__init__(model=model, 
+                         structure="grid", 
+                         batch_first=batch_first,
+                         lookback_dim=lookback_dim)
+        
+class NoRolloutWrapper(RolloutWrapper):
+    """
+        Alias for `dynabench.model.utils.RolloutWrapper with structure="grid"
+    """
+    def __init__(self,
+                 model,
+                 batch_first: bool = True,
+                 lookback_dim: int = 1):
+        super().__init__(model=model, 
+                         structure="grid", 
+                         batch_first=batch_first,
+                         lookback_dim=lookback_dim)
+    
+    def forward(self, x: torch.Tensor, t_eval: List[float] = [0,1]): # features
+        x_stacked_lookback = einops.rearrange(x, self._einops_stack_lookback_expr()) # Merge lookback with the feature dimension
+        return self.model(x_stacked_lookback, t_eval=t_eval)
+
+
+
+class GraphRolloutWrapper(RolloutWrapper):
+    """
+        Alias for `dynabench.model.utils.RolloutWrapper with structure="graph"
+    """
+    def __init__(self,
+                 model,
+                 batch_first: bool = True,
+                 knn: int = 16,
+                 lookback_dim: int = 1):
+        self.k = knn
+        super().__init__(model=model, 
+                         structure="cloud",
+                         batch_first=batch_first,
+                         lookback_dim=lookback_dim)
+    
+    def _make_data(self, x, points):
+
+        points_padded = torch.cat((points,
+                        points + torch.tensor([0, 1], device=points.device),
+                        points + torch.tensor([1, 0], device=points.device),
+                        points + torch.tensor([1, 1], device=points.device),
+                        points + torch.tensor([0, -1], device=points.device),
+                        points + torch.tensor([-1, 0], device=points.device),
+                        points + torch.tensor([-1, -1], device=points.device),
+                        points + torch.tensor([1, -1], device=points.device),
+                        points + torch.tensor([-1, 1], device=points.device)
+                        ), dim=1)
+        
+        transformation = KNNGraph(k=self.k)
+        data_list = []
+        for i in range(x.shape[0]):
+            x_graph = Data(x=torch.cat((x[i],)*9, dim=0), pos=points_padded[i])
+            x_graph = transformation(x_graph)
+            x_graph.x = x_graph.x[:x.shape[1]]
+            x_graph.pos = x_graph.pos[:x.shape[1]]
+            x_graph.edge_index = x_graph.edge_index[:,:x.shape[1]*self.k] % x.shape[1]
+            data_list.append(x_graph)
+        
+        return Batch.from_data_list(data_list)
+
+    def forward(self,
                 x: torch.Tensor, # features
                 p: torch.Tensor, # point coordinates
                 t_eval: List[float] = [1]):
         
         rollout = []
 
+        x_stacked_lookback = einops.rearrange(x, self._einops_stack_lookback_expr()) # Merge lookback with the feature dimension
+        data = self._make_data(x_stacked_lookback, p)
+        
         for t in t_eval:
-            x_ = x.view(x.shape[0], x.shape[2], x.shape[1]*x.shape[3])
-            x_ = self.model(x_, p)
-            x = torch.cat((x[:,1:],x_.view(x.shape[0], 1, x.shape[2], x_.shape[-1])), dim=1)
-            rollout.append(x_)
-
-        dim = 1 if self.batch_first else 0
-        return torch.stack(rollout, dim=dim)
+            x_stacked_lookback = einops.rearrange(x, self._einops_stack_lookback_expr()) # Merge lookback with the feature dimension
+            
+            data.x = einops.rearrange(x_stacked_lookback, 'b n c -> (b n) c')
+            data_single = self.model(data)
+            dl = Batch.to_data_list(data_single)
+            x_single = torch.cat([torch.unsqueeze(d.x, dim=0) for d in dl], dim=0)
+            
+            x_single_unstacked_loockback = einops.rearrange(x_single, "batch ... -> batch () ...") # add dummy dim for lookback in pred
+            x = torch.cat([x[:, 1:], x_single_unstacked_loockback], dim=self.lookback_dim)
+            
+            rollout.append(x_single)
+            
+            
+        rollout_dim = 1 if self.batch_first else 0
+        return torch.stack(rollout, dim=rollout_dim)
     
 
-class GridIterativeWrapper(torch.nn.Module):
-    """
-    Wrapper class for iterative grid-based model evaluation.
-
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The model to be wrapped and iteratively evaluated.
-    batch_first : bool, default True
-        If True, the first dimension of the input tensor is considered as the batch dimension.
-
-    Attributes
-    ----------
-    model : torch.nn.Module
-        The wrapped model.
-    batch_first : bool
-        Indicates if the first dimension of the input tensor is the batch dimension.
-
-    Methods
-    -------
-    forward(x: torch.Tensor, t_eval: List[float] = [1]) -> torch.Tensor
-        Perform iterative evaluation of the model at specified time points.
-    """
-    def __init__(self, 
-                 model,
-                 batch_first: bool = True):
-        super().__init__()
-        self.model = model
-        self.batch_first = batch_first
-
-    def forward(self, 
-                x: torch.Tensor, # features
-                t_eval: List[float] = [1]):
+### FUTURE ####
+# class GraphRolloutWrapper(RolloutWrapper):
+#     """
+#         Alias for `dynabench.model.utils.RolloutWrapper with structure="graph"
+#     """
+#     def __init__(self,
+#                  model,
+#                  batch_first: bool = True,
+#                  lookback_dim: int = 1):
+#         super().__init__(model=model, 
+#                          structure="cloud",
+#                          batch_first=batch_first,
+#                          lookback_dim=lookback_dim)
+           
+#     def forward(self,
+#                 x: torch.Tensor, # features
+#                 p: torch.Tensor, # point coordinates
+#                 edge_index: torch.Tensor, # edge index
+#                 t_eval: List[float] = [1]):
         
-        rollout = []
-
-        for t in t_eval:
-            x_ = x.view(x.shape[0], x.shape[1]*x.shape[2], x.shape[3], x.shape[4])
-            x_ = self.model(x_)
-            x = torch.cat((x[:,1:],x_.view(x.shape[0], 1, x.shape[2], x.shape[3], x.shape[4])), dim=1)
-            rollout.append(x_)
-
-        dim = 1 if self.batch_first else 0
-        return torch.stack(rollout, dim=dim)
+#         rollout = []
+#         for t in t_eval:
+#             x_stacked_lookback = einops.rearrange(x, self._einops_stack_lookback_expr()) # Merge lookback with the feature dimension
+            
+#             graph_list = [Data(x=x_stacked_lookback, pos=p, edge_index=edge_index) for i in range(x.shape[0])]
+#             args = Batch.from_data_list(graph_list)
+#             data_single = self.model(*args)
+#             x_single = data_single.x
+            
+#             x_single_unstacked_loockback = einops.rearrange(x_single, "batch ... -> batch () ...") # add dummy dim for lookback in pred
+#             x = torch.cat([x[:, 1:], x_single_unstacked_loockback], dim=self.lookback_dim)
+            
+#             rollout.append(x_single)
+            
+            
+#         rollout_dim = 1 if self.batch_first else 0
+#         return torch.stack(rollout, dim=rollout_dim)

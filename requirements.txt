@@ -1,6 +1,7 @@
 dynabench
 setuptools
 numpy==1.26.4
+einops
 tqdm
 torch==2.6.0
 torchdiffeq

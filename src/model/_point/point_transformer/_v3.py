@@ -795,7 +795,6 @@ class PointTransformerV3(PointModule):
         self,
         in_channels=1,
         out_channels=1,
-        lookback=1,
         order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 6, 2),
@@ -871,7 +870,7 @@ class PointTransformerV3(PointModule):
         act_layer = nn.GELU
 
         self.embedding = Embedding(
-            in_channels=in_channels*lookback,
+            in_channels=in_channels,
             embed_channels=enc_channels[0],
             norm_layer=bn_layer,
             act_layer=act_layer,

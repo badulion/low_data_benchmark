@@ -28,7 +28,6 @@ class GraphPDE(nn.Module):
     def __init__(self, 
                  input_size,
                  output_size,
-                 lookback, 
                  phi_hidden_size, 
                  phi_hidden_layers, 
                  gamma_hidden_size, 
@@ -36,7 +35,7 @@ class GraphPDE(nn.Module):
                  spatial_dimensions=2) -> None:
         super().__init__()
         self.input_size = input_size
-        self.lookback = lookback
+        self.output_size = output_size
         self.phi_hidden_size = phi_hidden_size
         self.phi_hidden_layers = phi_hidden_layers
         self.gamma_hidden_size = gamma_hidden_size
@@ -44,12 +43,12 @@ class GraphPDE(nn.Module):
         self.spatial_dimensions = spatial_dimensions
 
         message_dimension = 1
-        self.phi = MLP(input_size=2*input_size*lookback+spatial_dimensions, 
+        self.phi = MLP(input_size=2*input_size+spatial_dimensions, 
                        output_size=message_dimension, 
                        hidden_size=phi_hidden_size, 
                        hidden_layers=phi_hidden_layers)
 
-        self.gamma = MLP(input_size=input_size*lookback+message_dimension, 
+        self.gamma = MLP(input_size=input_size+message_dimension, 
                          output_size=output_size, 
                          hidden_size=gamma_hidden_size, 
                          hidden_layers=gamma_hidden_layers)
@@ -62,6 +61,6 @@ class GraphPDE(nn.Module):
         dudt = self.dudt(x, edge_index, pos)
 
         
-        data.x = x[:,-self.input_size:] + dudt
+        data.x = x[:,-self.output_size:] + dudt
         
         return data

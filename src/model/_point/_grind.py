@@ -99,7 +99,9 @@ class GrIND(nn.Module):
         x_pred = self.prediction_net(x_grid, t_eval=t_eval)
         
         # interpolate back to the original points
-        x_pred = x_pred.permute(1, 0, 3, 4, 2)
-        x_pred = x_pred.reshape(x.shape[0], len(t_eval[1:]), self.grid_resolution**2, x.shape[-1])
+        #x_pred = x_pred.permute(1, 0, 3, 4, 2)
+        x_pred = x_pred.permute(0, 2, 3, 1)
+        #x_pred = x_pred.reshape(x.shape[0], len(t_eval[1:]), self.grid_resolution**2, x.shape[-1])
+        x_pred = x_pred.reshape(x.shape[0], len(t_eval[1:]), self.grid_resolution**2, x_pred.shape[-1])
         x_pred = self.fourier_interpolator(self.interpolation_points.view(1,1,*self.interpolation_points.shape), x_pred, p.unsqueeze(1))
-        return x_pred
+        return torch.squeeze(x_pred, 1)

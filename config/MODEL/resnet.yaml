@@ -2,9 +2,8 @@ model:
   _target_: src.model._grid._resnet.ResNet
   input_size: ${InChannels}
   output_size: ${OutChannels}
-  lookback: ${lookback}
-  resblock_layers: 5
-  resblock_channels: 512
+  resblock_layers: 6
+  resblock_channels: 128
   resblock_type: simple
   padding: 1
   padding_mode: circular

@@ -1,12 +1,11 @@
 model:
   _target_: src.model._point._fno.Geo_FNO
-  width: 32
-  modes: [8, 8]
+  width: 64
+  modes: [8,8]
   in_channels: ${InChannels}
   out_channels: ${OutChannels}
-  lookback: ${lookback}
   grid_size: [15, 15]
-  num_blocks: 9
+  num_blocks: 3
 
 structure: cloud
 wrapper: ${point_wrapper}

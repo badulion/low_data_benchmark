@@ -166,13 +166,12 @@ class PointTransformerV1(nn.Module):
     def __init__(self, 
                  input_dim,
                  output_dim,
-                 lookback,
                  num_points, 
                  num_blocks: int = 4, 
                  num_neighbors: int = 16,
                  transformer_dim: int = 512):
         super().__init__()
-        self.backbone = Backbone(num_points, num_blocks, num_neighbors, input_dim*lookback, transformer_dim)
+        self.backbone = Backbone(num_points, num_blocks, num_neighbors, input_dim, transformer_dim)
         self.fc2 = nn.Sequential(
             nn.Linear(32 * 2 ** num_blocks, 512),
             nn.ReLU(),

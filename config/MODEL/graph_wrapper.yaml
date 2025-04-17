@@ -1,4 +1,4 @@
-_target_: src.model._graph_wrapper.GraphIterativeWrapper
+_target_: src.model._utils.GraphRolloutWrapper
 model: ${MODEL.model}
 batch_first: True
-num_neighbors: 16
+knn: 16

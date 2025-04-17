@@ -193,11 +193,13 @@ class pl_wrapper(pl.LightningModule):
 def main(cfg : DictConfig) -> None:
 
     # wandb_key = f"{os.getenv('WANDBKEY')}"
-    # wandb_key = "6813c95f67c8b605e828ee3aba39eeec4b0ebad4"
-    # wandbloggedin = wandb.login(key = wandb_key, relogin=True)
+    wandb_key = "6813c95f67c8b605e828ee3aba39eeec4b0ebad4"
+    wandbloggedin = wandb.login(key = wandb_key, relogin=True)
 
     print(cfg.MODEL.name)
     print(cfg.resolution)
+
+    cfg.InChannels = cfg.InChannels * cfg.lookback
 
     model = instantiate(cfg.wrapper)
     datamodule = DynabenchDataModule(cfg)

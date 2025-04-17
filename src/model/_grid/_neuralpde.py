@@ -28,7 +28,6 @@ class NeuralPDE(nn.Module):
     def __init__(self,
                  input_dim: int,
                  output_dim: int,
-                 lookback: int,
                  hidden_channels: int = 64,
                  hidden_layers: int = 1,
                  solver: dict = {"method": "dopri5"},
@@ -37,11 +36,17 @@ class NeuralPDE(nn.Module):
         super().__init__(*args, **kwargs)
         self.input_dim = input_dim
         self.output_dim = output_dim
-        
+
+        if self.output_dim != self.input_dim:
+            self.pre_cnn = CNN(
+                input_size=input_dim,
+                output_size=output_dim,
+                hidden_layers=1,
+                hidden_channels=128
+            )
         self.cnn = CNN(
-            input_size=input_dim,
+            input_size=output_dim,
             output_size=output_dim,
-            lookback=lookback,
             hidden_layers=hidden_layers,
             hidden_channels=hidden_channels
         )
@@ -71,6 +76,8 @@ class NeuralPDE(nn.Module):
             torch.Tensor
                 Output tensor of shape (batch_size, rollout, output_size, height, width).
         """
+        if self.output_dim != self.input_dim:
+            x = self.pre_cnn(x)
 
         t_eval = torch.tensor(t_eval, dtype=x.dtype, device=x.device)
         if self.use_adjoint:
@@ -79,4 +86,5 @@ class NeuralPDE(nn.Module):
             pred = odeint(self._ode, x, t_eval, **self.solver)[1:]
         
         pred = torch.swapaxes(pred, 0, 1)
+        pred = torch.squeeze(pred, 1)
         return pred

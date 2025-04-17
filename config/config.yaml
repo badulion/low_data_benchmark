@@ -12,7 +12,8 @@ defaults:
   - MODEL@grid_wrapper: grid_wrapper
   - MODEL@point_wrapper: point_wrapper
   - MODEL@graph_wrapper: graph_wrapper
-  - MODEL: feast
+  - MODEL@no_wrapper: no_wrapper
+  - MODEL: grind
   - _self_
 
 # Model
@@ -31,7 +32,7 @@ Structure: ${MODEL.structure}
 Resolution: ${resolution.name}
 NPoints: ${resolution.nPoints}
 NGrid: ${resolution.nGrid}
-lookback: 2
+lookback: 4
 Base_path_data: data
 Batch_size: 32
 TrainRollout: 1

@@ -2,14 +2,13 @@ model:
   _target_: src.model._point._point_net.PointNet
   input_size: ${InChannels}
   output_size: ${OutChannels}
-  lookback: ${lookback}
-  intermediate_hidden_size: 64
-  hidden_size: 64
-  local_nn_hidden_size: 64
-  local_nn_hidden_layers: 2
-  global_nn_hidden_size: 64
-  global_nn_hidden_layers: 2
-  hidden_layers: 4
+  intermediate_hidden_size: 256
+  hidden_size: 256
+  local_nn_hidden_size: 256
+  local_nn_hidden_layers: 3
+  global_nn_hidden_size: 256
+  global_nn_hidden_layers: 3
+  hidden_layers: 3
   spatial_dimensions: 2
 
 structure: cloud

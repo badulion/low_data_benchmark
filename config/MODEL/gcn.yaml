@@ -1,10 +1,9 @@
 model:
   _target_: src.model._point._gcn.GCN
-  hidden_layers: 5
+  hidden_layers: 9
   input_size: ${InChannels}
   output_size: ${OutChannels}
-  lookback: ${lookback}
-  hidden_size: 1024
+  hidden_size: 512
   #dropout: 0.1
   #knn: 16
 

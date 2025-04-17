@@ -246,7 +246,6 @@ class Geo_FNO (nn.Module):
                   modes: tuple = (12, 12),
                   in_channels: int = 1,
                   out_channels: int = 1,
-                  lookback: int = 1,
                   grid_size: tuple = (15, 15),
                   num_blocks: int = 3,
         ):
@@ -269,7 +268,7 @@ class Geo_FNO (nn.Module):
         ### Diffeomorphism for GeoFNO iphi
         self.model_iphi = IPHI()    # Will be moved to same device as rest of model
 
-        self.fc0 = nn.Linear(in_channels*lookback, self.width)
+        self.fc0 = nn.Linear(in_channels, self.width)
 
         self.conv_in = SpectralConv2d(self.width, self.width, self.modes1, self.modes2, self.s1, self.s2)
         self.conv = nn.ModuleList([SpectralConv2d(self.width, self.width, self.modes1, self.modes2) for i in range(num_blocks)])

@@ -6,7 +6,6 @@ class PointGNN(nn.Module):
     def __init__(self, 
                  input_size,
                  output_size,
-                 lookback, 
                  intermediate_hidden_size,
                  hidden_size, 
                  encoder_nn_hidden_size,
@@ -25,11 +24,10 @@ class PointGNN(nn.Module):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.lookback = lookback
         self.hidden_size = hidden_size
         self.hidden_layers = hidden_layers
 
-        self.input_layer = MLP(input_size=input_size*lookback, output_size=hidden_size, hidden_size=encoder_nn_hidden_size, hidden_layers=encoder_nn_hidden_layers)
+        self.input_layer = MLP(input_size=input_size, output_size=hidden_size, hidden_size=encoder_nn_hidden_size, hidden_layers=encoder_nn_hidden_layers)
 
         self.hidden_layers = nn.ModuleList([
             PointGNNConv(mlp_h=MLP(input_size=hidden_size, output_size=spatial_dimensions, hidden_size=offset_nn_hidden_size, hidden_layers=offset_nn_hidden_layers),
