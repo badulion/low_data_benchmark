@@ -12,6 +12,7 @@ import pytorch_lightning as pl
 from torch import nn
 from typing import Any
 import os
+import signal, sys
 
 from cProfile import Profile
 from pstats import SortKey, Stats
@@ -22,6 +23,8 @@ from torch.optim import Adam
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.model_summary import summarize
 from torch.utils.data import DataLoader, random_split
+
+exit_gracefully = False
 
 class DynabenchDataset(torch.utils.data.Dataset):
     def __init__( 
@@ -95,6 +98,7 @@ class pl_wrapper(pl.LightningModule):
                  *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
+        self.pars = hparams
         self.model = model
         self.lossfunc = lossfunc
         self.optimizer = optimizer
@@ -108,8 +112,9 @@ class pl_wrapper(pl.LightningModule):
 
         self._start = None
         self._end = None
-
+    
     def _step(self, batch):
+        
         # extract number of steps
         x,y,p = batch
 
@@ -163,6 +168,9 @@ class pl_wrapper(pl.LightningModule):
         torch.cuda.synchronize()
         elapsed_time = _start.elapsed_time(_end)
         self.log('test_time', elapsed_time)
+        self.log("test_loss", loss_mse)
+        self.log("test_loss_rmse", loss_rmse)
+        self.log("test_loss_l1", loss_l1)
 
         # log 1 step and 16 step loss seperatly
         for i in range(len(loss)):
@@ -223,6 +231,8 @@ def main(cfg : DictConfig) -> None:
     
     wandb.finish()
 
+    with open(f'{cfg.output_dir}/status/{cfg.version_name}.txt', 'w') as f:
+        f.write('TRAINING_COMPLETED')
 
 
 if __name__ == "__main__":

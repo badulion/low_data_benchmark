@@ -21,4 +21,4 @@ class BaselineZero_cloud(nn.Module):
         self.spatial_dimensions = spatial_dimensions
 
     def forward(self, x, p):
-        return torch.zeros_like(x[:,-self.output_size:])
+        return torch.zeros_like(x[:,:,-self.output_size:])

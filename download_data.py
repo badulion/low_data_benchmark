@@ -1,6 +1,6 @@
 from dynabench.dataset import download_equation
 
-EQUATION = ["advection", "burgers", "gasdynamics", "kuramotosivashinsky", "reactiondiffustion", "wave"]
+EQUATION = ["advection", "burgers", "gasdynamics", "kuramotosivashinsky", "reactiondiffusion", "wave"]
 RESOLUTION = ["low", "medium", "high", "full"]
 STRUCTURE = ["grid", "cloud"]
 

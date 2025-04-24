@@ -8,18 +8,18 @@ defaults:
   - trainer: trainer
   - dbiterator: dbiterator
   - resolution: low
-  - equation: burgers
+  - equation: kuramotosivashinsky
   - MODEL@grid_wrapper: grid_wrapper
   - MODEL@point_wrapper: point_wrapper
   - MODEL@graph_wrapper: graph_wrapper
   - MODEL@no_wrapper: no_wrapper
-  - MODEL: grind
+  - MODEL: cnn
   - _self_
 
 # Model
 version: 0:0
 wrapper: ${MODEL.wrapper}
-version_name: ${MODEL.name}:${version}
+version_name: ${MODEL.name}:${equation.name}:${resolution.name}:${version}
 Name: Dynabench_${version_name}
 output_dir: output
 logdir: ${Name}
@@ -34,7 +34,7 @@ NPoints: ${resolution.nPoints}
 NGrid: ${resolution.nGrid}
 lookback: 4
 Base_path_data: data
-Batch_size: 32
+Batch_size: 128
 TrainRollout: 1
 TestRollout: 16
 Workers: 16

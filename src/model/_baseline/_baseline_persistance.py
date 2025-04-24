@@ -1,4 +1,5 @@
 from torch import nn
+import einops
 
 class BaselinePersistence_grid(nn.Module):
     def __init__(self, input_size: int, output_size: int, lookback: int, spatial_dimensions: int) -> None:
@@ -20,4 +21,4 @@ class BaselinePersistence_cloud(nn.Module):
         self.spatial_dimensions = spatial_dimensions
 
     def forward(self, x, p):
-        return x[:,-self.output_size:]
+        return x[:,:,-self.output_size:]
