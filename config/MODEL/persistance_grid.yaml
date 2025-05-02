@@ -7,4 +7,4 @@ model:
 
 structure: grid
 wrapper: ${grid_wrapper}
-name: baseline_persistance
+name: persistance_grid

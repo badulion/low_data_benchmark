@@ -6,7 +6,7 @@ val_check_interval: ${ValCheckInterval}
 limit_val_batches: ${val_batches}
 limit_test_batches: ${test_batches}
 limit_train_batches: ${train_batches}
-log_every_n_steps: 1
+log_every_n_steps: 10
 max_epochs: ${Epochs}
 default_root_dir: ${output_dir}
 
@@ -19,9 +19,12 @@ logger:
     save_dir: ${output_dir}/csv_logs
     name: ${logdir}
   - _target_: pytorch_lightning.loggers.WandbLogger
-    project: dynabench2-final
+    project: dynabench2-tests
     save_dir: ${output_dir}/wandb_logs
     name: ${logdir}
+    settings:
+      _target_: wandb.Settings
+      init_timeout: 120
 callbacks:
   - _target_: pytorch_lightning.callbacks.ModelCheckpoint
     filename: best_ckpt
@@ -34,5 +37,5 @@ callbacks:
     save_last: True
     monitor: step
     mode: max
-    every_n_train_steps: 500
+    every_n_train_steps: 100
     save_top_k: 1

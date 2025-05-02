@@ -15,4 +15,4 @@ model:
 
 structure: cloud
 wrapper: ${point_wrapper}
-name: PTv3
+name: ptv3

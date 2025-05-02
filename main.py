@@ -213,7 +213,7 @@ def main(cfg : DictConfig) -> None:
     datamodule = DynabenchDataModule(cfg)
     
     # if baseline -> perform only forward pass and mean
-    if 'baseline' in cfg.MODEL.name:
+    if 'zero' in cfg.MODEL.name or 'persistance' in cfg.MODEL.name:
         # skip training
         # test model
         optimizer = None
@@ -228,12 +228,19 @@ def main(cfg : DictConfig) -> None:
         trainer.fit(model=pl_model, datamodule=datamodule, ckpt_path="last")
         # test model
         trainer.test(datamodule=datamodule, ckpt_path='best')
-    
-    wandb.finish()
 
     with open(f'{cfg.output_dir}/status/{cfg.version_name}.txt', 'w') as f:
         f.write('TRAINING_COMPLETED')
+    
+    wandb.finish()
+
+
+def handler(signum, frame):
+    print("Received SIGUSR1, interrupting training...")
+    wandb.finish()
+    sys.exit(0)
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGUSR1, handler)
     main()

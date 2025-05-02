@@ -7,4 +7,4 @@ model:
 
 structure: cloud
 wrapper: ${point_wrapper}
-name: baseline_zero
+name: zero_cloud
