@@ -14,7 +14,7 @@ defaults:
   - model@point_wrapper: point_wrapper
   - model@graph_wrapper: graph_wrapper
   - model@no_wrapper: no_wrapper
-  - model: pointnet
+  - model: ptv1
   - _self_
 
 # Model

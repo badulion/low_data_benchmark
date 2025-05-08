@@ -35,3 +35,9 @@ pip install --no-build-isolation -r requirements.txt
 pip install torch_cluster -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
 pip install torch-scatter -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
 ```
+
+#### Current Fix:
+```bash
+pip uninstall dynabench -y
+pip install git+ssh://git@github.com/badulion/dynabench.git
+```
