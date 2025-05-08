@@ -234,7 +234,6 @@ def main(cfg : DictConfig) -> None:
     transforms = []
     if cfg.Structure == 'cloud' and cfg.resolution.name == 'full':
         transforms.append(cfg.transforms['Grid2Cloud'])
-        transforms.append(cfg.transforms['EdgeList'])
     if cfg.type == 'graph':
         transforms.append(cfg.transforms['EdgeList'])
     transforms.append(cfg.transforms['ToDict'])
