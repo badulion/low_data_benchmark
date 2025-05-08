@@ -23,24 +23,7 @@ from torch.optim import Adam
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.model_summary import summarize
 from torch.utils.data import DataLoader, random_split
-
-exit_gracefully = False
-
-class DynabenchDataset(torch.utils.data.Dataset):
-    def __init__( 
-            self,
-            cfg,
-            split: str="train",
-            rollout: int = 16,
-            **kwargs):
-        self.iterator = instantiate(cfg.dbiterator, split=split, rollout=rollout)
-
-    def __len__(self):
-        return len(self.iterator)
-    
-    def __getitem__(self, index):
-        x, y, p = self.iterator[index]
-        return x.astype(np.float32), y.astype(np.float32), p.astype(np.float32)
+from dynabench.dataset.transforms import Compose
 
 class DynabenchDataModule(LightningDataModule):
     def __init__(self, cfg):
@@ -50,30 +33,58 @@ class DynabenchDataModule(LightningDataModule):
         self.batch_size = cfg.Batch_size
         self.num_workers = cfg.Workers
 
+        self.transforms = Compose([instantiate(t) for t in cfg.transforms])
+
         self.train_rollout = cfg.TrainRollout
         self.val_rollout = cfg.TestRollout
         self.test_rollout = cfg.TestRollout
 
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
-        if stage == "fit" or stage is None:
-            self.train_dataset = DynabenchDataset(
-                split="train",
-                rollout=self.train_rollout,
-                cfg=self.cfg
-            )
-            self.val_dataset = DynabenchDataset(
-                split="val",
-                rollout=self.val_rollout,
-                cfg=self.cfg
-            )
-        # Assign test dataset for use in dataloader(s)
-        if stage == "test" or stage is None:
-            self.test_dataset = DynabenchDataset(
-                split="test",
-                rollout=self.test_rollout,
-                cfg=self.cfg
-            )
+        if self.cfg.Resolution == 'full':
+            if stage == "fit" or stage is None:
+                self.train_dataset = instantiate(self.cfg.dbiterator,
+                    split="train",
+                    structure='grid',
+                    rollout=self.train_rollout,
+                    transforms=self.transforms,
+                )
+                self.val_dataset = instantiate(self.cfg.dbiterator,
+                    split="val",
+                    structure='grid',
+                    rollout=self.val_rollout,
+                    transforms=self.transforms,
+                )
+            # Assign test dataset for use in dataloader(s)
+            if stage == "test" or stage is None:
+                self.test_dataset = instantiate(self.cfg.dbiterator,
+                    split="test",
+                    structure='grid',
+                    rollout=self.test_rollout,
+                    transforms=self.transforms,
+                )
+        else:
+            if stage == "fit" or stage is None:
+                self.train_dataset = instantiate(self.cfg.dbiterator,
+                    split="train",
+                    structure=self.cfg.Structure,
+                    rollout=self.train_rollout,
+                    transforms=self.transforms,
+                )
+                self.val_dataset = instantiate(self.cfg.dbiterator,
+                    split="val",
+                    structure=self.cfg.Structure,
+                    rollout=self.val_rollout,
+                    transforms=self.transforms,
+                )
+            # Assign test dataset for use in dataloader(s)
+            if stage == "test" or stage is None:
+                self.test_dataset = instantiate(self.cfg.dbiterator,
+                    split="test",
+                    structure=self.cfg.Structure,
+                    rollout=self.test_rollout,
+                    transforms=self.transforms,
+                )
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
@@ -95,6 +106,8 @@ class pl_wrapper(pl.LightningModule):
                  lossfunc,
                  optimizer,
                  structure,
+                 type,
+                 device,
                  *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
@@ -103,6 +116,8 @@ class pl_wrapper(pl.LightningModule):
         self.lossfunc = lossfunc
         self.optimizer = optimizer
         self.structure = structure
+        self._type = type
+        self._device = device
         
         summary = summarize(self, max_depth=-1)
         trainable_params = summary.trainable_parameters
@@ -116,16 +131,24 @@ class pl_wrapper(pl.LightningModule):
     def _step(self, batch):
         
         # extract number of steps
-        x,y,p = batch
+        x = batch['x']
+        y = batch['y']
+        p = batch['pos']
+        if 'knn_graph' in batch.keys():
+            edge_index = batch['knn_graph']
+        else:
+            edge_index = None
 
         #x = x[:,0]
         steps = y.shape[1]
         # prediction steps
-        t = torch.arange(0, steps, device=batch[0].device)
-        if self.structure == 'grid':
+        t = torch.arange(0, steps, device=x.device)
+        if self._type == 'grid':
             pred = self.model(x=x, t_eval=t)
-        elif self.structure == 'cloud':
+        elif self._type == 'point':
             pred = self.model(x=x, p=p, t_eval=t)
+        elif self._type == 'graph':
+            pred = self.model(x=x, p=p, edge_index=edge_index, t_eval=t)
         else:
             pred = x
         loss = self.lossfunc(pred[:,-1], y[:,-1])
@@ -140,10 +163,10 @@ class pl_wrapper(pl.LightningModule):
         return loss, loss_mse, loss_l1, loss_rmse, pred
     
     def training_step(self, batch, batch_idx):
-        self._start = torch.cuda.Event(enable_timing=True)
-        self._end = torch.cuda.Event(enable_timing=True)
+        if self._device == 'gpu': self._start = torch.cuda.Event(enable_timing=True)
+        if self._device == 'gpu': self._end = torch.cuda.Event(enable_timing=True)
 
-        self._start.record()
+        if self._device == 'gpu': self._start.record()
         loss, loss_mse, loss_l1, loss_rmse, pred = self._step(batch)
 
         self.log('train_loss', loss_mse, prog_bar=True)
@@ -159,15 +182,15 @@ class pl_wrapper(pl.LightningModule):
         return loss_mse
     
     def test_step(self, batch, batch_idx):
-        _start = torch.cuda.Event(enable_timing=True)
-        _end = torch.cuda.Event(enable_timing=True)
+        if self._device == 'gpu': _start = torch.cuda.Event(enable_timing=True)
+        if self._device == 'gpu': _end = torch.cuda.Event(enable_timing=True)
 
-        _start.record()
+        if self._device == 'gpu': _start.record()
         loss, loss_mse, loss_l1, loss_rmse, pred = self._step(batch)
-        _end.record()
-        torch.cuda.synchronize()
-        elapsed_time = _start.elapsed_time(_end)
-        self.log('test_time', elapsed_time)
+        if self._device == 'gpu': _end.record()
+        if self._device == 'gpu': torch.cuda.synchronize()
+        if self._device == 'gpu': elapsed_time = _start.elapsed_time(_end)
+        if self._device == 'gpu': self.log('test_time', elapsed_time)
         self.log("test_loss", loss_mse)
         self.log("test_loss_rmse", loss_rmse)
         self.log("test_loss_l1", loss_l1)
@@ -186,12 +209,12 @@ class pl_wrapper(pl.LightningModule):
         optimizer.step()
 
         # End timing after optimizer step
-        self._end.record()
-        torch.cuda.synchronize()
-        total_time_ms = self._start.elapsed_time(self._end)
+        if self._device == 'gpu': self._end.record()
+        if self._device == 'gpu': torch.cuda.synchronize()
+        if self._device == 'gpu': total_time_ms = self._start.elapsed_time(self._end)
 
         # Log total step time
-        self.log("train_step_ms", total_time_ms)
+        if self._device == 'gpu': self.log("train_step_ms", total_time_ms)
 
     def configure_optimizers(self):
         return self.optimizer
@@ -204,8 +227,20 @@ def main(cfg : DictConfig) -> None:
     wandb_key = "6813c95f67c8b605e828ee3aba39eeec4b0ebad4"
     wandbloggedin = wandb.login(key = wandb_key, relogin=True)
 
-    print(cfg.MODEL.name)
+    print(cfg.model.name)
     print(cfg.resolution)
+
+    # compose transforms according to model
+    transforms = []
+    if cfg.Structure == 'cloud' and cfg.resolution.name == 'full':
+        transforms.append(cfg.transforms['Grid2Cloud'])
+        transforms.append(cfg.transforms['EdgeList'])
+    if cfg.type == 'graph':
+        transforms.append(cfg.transforms['EdgeList'])
+    transforms.append(cfg.transforms['ToDict'])
+    cfg.transforms = transforms
+        
+    
 
     cfg.InChannels = cfg.InChannels * cfg.lookback
 
@@ -213,16 +248,16 @@ def main(cfg : DictConfig) -> None:
     datamodule = DynabenchDataModule(cfg)
     
     # if baseline -> perform only forward pass and mean
-    if 'zero' in cfg.MODEL.name or 'persistance' in cfg.MODEL.name:
+    if 'zero' in cfg.model.name or 'persistance' in cfg.model.name:
         # skip training
         # test model
         optimizer = None
-        pl_model = pl_wrapper(hparams=cfg, hparams_model=cfg.MODEL, model=model, lossfunc=mse_loss, optimizer=optimizer, structure=cfg.Structure)
+        pl_model = pl_wrapper(hparams=cfg, hparams_model=cfg.model, model=model, lossfunc=mse_loss, optimizer=optimizer, structure=cfg.Structure, type=cfg.type, device=cfg.device)
         trainer = instantiate(cfg.trainer)
         trainer.test(datamodule=datamodule, model=pl_model)
     else:
         optimizer = Adam(model.parameters(), lr=cfg.LearningRate, weight_decay=cfg.WeightDecay)
-        pl_model = pl_wrapper(hparams=cfg, hparams_model=cfg.MODEL, model=model, lossfunc=mse_loss, optimizer=optimizer, structure=cfg.Structure)
+        pl_model = pl_wrapper(hparams=cfg, hparams_model=cfg.model, model=model, lossfunc=mse_loss, optimizer=optimizer, structure=cfg.Structure, type=cfg.type, device=cfg.device)
         trainer = instantiate(cfg.trainer)
         # train model
         trainer.fit(model=pl_model, datamodule=datamodule, ckpt_path="last")

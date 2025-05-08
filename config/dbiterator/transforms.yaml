@@ -1,0 +1,10 @@
+EdgeList:
+    _target_: dynabench.dataset.transforms.EdgeList
+    k: 16
+
+Grid2Cloud:
+    _target_: dynabench.dataset.transforms.Grid2Cloud
+
+ToDict:
+    _target_: dynabench.dataset.transforms.ToDict
+  

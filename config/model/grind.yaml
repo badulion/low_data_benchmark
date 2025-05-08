@@ -13,5 +13,6 @@ model:
   spatial_dim: 2
 
 structure: cloud
+type: point
 wrapper: ${point_wrapper}
 name: grind

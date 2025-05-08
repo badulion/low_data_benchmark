@@ -8,5 +8,6 @@ model:
   transformer_dim: 128
 
 structure: cloud
+type: point
 wrapper: ${point_wrapper}
 name: ptv1

@@ -10,5 +10,6 @@ model:
   activation: ReLU
 
 structure: grid
+type: grid
 wrapper: ${grid_wrapper}
 name: cnn

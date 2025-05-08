@@ -7,5 +7,6 @@ model:
   out_channels: ${OutChannels}
 
 structure: grid
+type: grid
 wrapper: ${grid_wrapper}
 name: fno

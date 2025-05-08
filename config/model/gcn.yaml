@@ -8,5 +8,6 @@ model:
   #knn: 16
 
 structure: cloud
+type: graph
 wrapper: ${graph_wrapper}
 name: gcn

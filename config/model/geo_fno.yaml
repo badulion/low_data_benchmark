@@ -8,5 +8,6 @@ model:
   num_blocks: 3
 
 structure: cloud
+type: point
 wrapper: ${point_wrapper}
 name: geo_fno

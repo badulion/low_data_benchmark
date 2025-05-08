@@ -1,4 +1,3 @@
 _target_: src.model._utils.GraphRolloutWrapper
-model: ${MODEL.model}
+model: ${model.model}
 batch_first: True
-knn: 16

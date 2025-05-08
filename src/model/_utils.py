@@ -151,40 +151,17 @@ class GraphRolloutWrapper(RolloutWrapper):
                          batch_first=batch_first,
                          lookback_dim=lookback_dim)
     
-    def _make_data(self, x, points):
-
-        points_padded = torch.cat((points,
-                        points + torch.tensor([0, 1], device=points.device),
-                        points + torch.tensor([1, 0], device=points.device),
-                        points + torch.tensor([1, 1], device=points.device),
-                        points + torch.tensor([0, -1], device=points.device),
-                        points + torch.tensor([-1, 0], device=points.device),
-                        points + torch.tensor([-1, -1], device=points.device),
-                        points + torch.tensor([1, -1], device=points.device),
-                        points + torch.tensor([-1, 1], device=points.device)
-                        ), dim=1)
-        
-        transformation = KNNGraph(k=self.k)
-        data_list = []
-        for i in range(x.shape[0]):
-            x_graph = Data(x=torch.cat((x[i],)*9, dim=0), pos=points_padded[i])
-            x_graph = transformation(x_graph)
-            x_graph.x = x_graph.x[:x.shape[1]]
-            x_graph.pos = x_graph.pos[:x.shape[1]]
-            x_graph.edge_index = x_graph.edge_index[:,:x.shape[1]*self.k] % x.shape[1]
-            data_list.append(x_graph)
-        
-        return Batch.from_data_list(data_list)
-
     def forward(self,
                 x: torch.Tensor, # features
                 p: torch.Tensor, # point coordinates
+                edge_index: torch.Tensor, # edge index
                 t_eval: List[float] = [1]):
         
         rollout = []
 
         x_stacked_lookback = einops.rearrange(x, self._einops_stack_lookback_expr()) # Merge lookback with the feature dimension
-        data = self._make_data(x_stacked_lookback, p)
+        data_list = [Data(x=x_stacked_lookback[i], pos=p[i], edge_index=edge_index[i]) for i in range(x.shape[0])]
+        data = Batch.from_data_list(data_list)
         
         for t in t_eval:
             x_stacked_lookback = einops.rearrange(x, self._einops_stack_lookback_expr()) # Merge lookback with the feature dimension

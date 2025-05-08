@@ -14,5 +14,6 @@ model:
   dec_patch_size: [128, 128] #[128, 128, 128, 128]
 
 structure: cloud
+type: point
 wrapper: ${point_wrapper}
 name: ptv3

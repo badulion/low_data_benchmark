@@ -6,5 +6,6 @@ model:
   spatial_dimensions: 2
 
 structure: grid
+type: grid
 wrapper: ${grid_wrapper}
 name: zero_grid
