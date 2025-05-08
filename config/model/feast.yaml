@@ -11,5 +11,6 @@ model:
 
 
 structure: cloud
+type: graph
 wrapper: ${graph_wrapper}
 name: feast

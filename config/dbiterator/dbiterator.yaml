@@ -1,7 +1,6 @@
 _target_: dynabench.dataset.DynabenchIterator
 split: train
 equation: ${Equation}
-structure: ${Structure}
 resolution: ${Resolution}
 base_path: ${Base_path_data}
 lookback: ${lookback}

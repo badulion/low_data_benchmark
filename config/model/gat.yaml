@@ -7,5 +7,6 @@ model:
   spatial_dimensions: 2
 
 structure: cloud
+type: graph
 wrapper: ${graph_wrapper}
 name: gat

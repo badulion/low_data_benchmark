@@ -8,5 +8,6 @@ model:
   use_adjoint: False
 
 structure: grid
+type: grid
 wrapper: ${grid_wrapper}
 name: neuralPDE

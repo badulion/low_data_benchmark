@@ -1,10 +1,11 @@
 model:
-  _target_: src.model._baseline._baseline_zero.BaselineZero_cloud
+  _target_: src.model._baseline._baseline_persistance.BaselinePersistence_cloud
   input_size: ${InChannels}
   output_size: ${OutChannels}
   lookback: ${lookback}
   spatial_dimensions: 2
 
 structure: cloud
+type: point
 wrapper: ${point_wrapper}
-name: zero_cloud
+name: persistance_cloud
