@@ -1,4 +1,4 @@
-dynabench
+dynabench==0.4.4
 setuptools
 numpy==1.26.4
 einops

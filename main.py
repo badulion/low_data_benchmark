@@ -117,7 +117,7 @@ class pl_wrapper(pl.LightningModule):
         self.optimizer = optimizer
         self.structure = structure
         self._type = type
-        self._device = device
+        self._dev = device
         
         summary = summarize(self, max_depth=-1)
         trainable_params = summary.trainable_parameters
@@ -163,10 +163,10 @@ class pl_wrapper(pl.LightningModule):
         return loss, loss_mse, loss_l1, loss_rmse, pred
     
     def training_step(self, batch, batch_idx):
-        if self._device == 'gpu': self._start = torch.cuda.Event(enable_timing=True)
-        if self._device == 'gpu': self._end = torch.cuda.Event(enable_timing=True)
+        if self._dev == 'gpu': self._start = torch.cuda.Event(enable_timing=True)
+        if self._dev == 'gpu': self._end = torch.cuda.Event(enable_timing=True)
 
-        if self._device == 'gpu': self._start.record()
+        if self._dev == 'gpu': self._start.record()
         loss, loss_mse, loss_l1, loss_rmse, pred = self._step(batch)
 
         self.log('train_loss', loss_mse, prog_bar=True)
@@ -182,15 +182,15 @@ class pl_wrapper(pl.LightningModule):
         return loss_mse
     
     def test_step(self, batch, batch_idx):
-        if self._device == 'gpu': _start = torch.cuda.Event(enable_timing=True)
-        if self._device == 'gpu': _end = torch.cuda.Event(enable_timing=True)
+        if self._dev == 'gpu': _start = torch.cuda.Event(enable_timing=True)
+        if self._dev == 'gpu': _end = torch.cuda.Event(enable_timing=True)
 
         if self._device == 'gpu': _start.record()
         loss, loss_mse, loss_l1, loss_rmse, pred = self._step(batch)
-        if self._device == 'gpu': _end.record()
-        if self._device == 'gpu': torch.cuda.synchronize()
-        if self._device == 'gpu': elapsed_time = _start.elapsed_time(_end)
-        if self._device == 'gpu': self.log('test_time', elapsed_time)
+        if self._dev == 'gpu': _end.record()
+        if self._dev == 'gpu': torch.cuda.synchronize()
+        if self._dev == 'gpu': elapsed_time = _start.elapsed_time(_end)
+        if self._dev == 'gpu': self.log('test_time', elapsed_time)
         self.log("test_loss", loss_mse)
         self.log("test_loss_rmse", loss_rmse)
         self.log("test_loss_l1", loss_l1)
@@ -209,12 +209,12 @@ class pl_wrapper(pl.LightningModule):
         optimizer.step()
 
         # End timing after optimizer step
-        if self._device == 'gpu': self._end.record()
-        if self._device == 'gpu': torch.cuda.synchronize()
-        if self._device == 'gpu': total_time_ms = self._start.elapsed_time(self._end)
+        if self._dev == 'gpu': self._end.record()
+        if self._dev == 'gpu': torch.cuda.synchronize()
+        if self._dev == 'gpu': total_time_ms = self._start.elapsed_time(self._end)
 
         # Log total step time
-        if self._device == 'gpu': self.log("train_step_ms", total_time_ms)
+        if self._dev == 'gpu': self.log("train_step_ms", total_time_ms)
 
     def configure_optimizers(self):
         return self.optimizer
@@ -229,10 +229,11 @@ def main(cfg : DictConfig) -> None:
 
     print(cfg.model.name)
     print(cfg.resolution)
+    print(cfg.Structure)
 
     # compose transforms according to model
     transforms = []
-    if cfg.Structure == 'cloud' and cfg.resolution.name == 'full':
+    if cfg.model.structure == 'cloud' and cfg.Structure == 'grid':
         transforms.append(cfg.transforms['Grid2Cloud'])
     if cfg.type == 'graph':
         transforms.append(cfg.transforms['EdgeList'])
@@ -240,7 +241,6 @@ def main(cfg : DictConfig) -> None:
     cfg.transforms = transforms
         
     
-
     cfg.InChannels = cfg.InChannels * cfg.lookback
 
     model = instantiate(cfg.wrapper)
