@@ -36,8 +36,8 @@ pip install torch_cluster -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
 pip install torch-scatter -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
 ```
 
-#### Current Fix:
+#### Current Fix (not needed for dynabench:0.4.4):
 ```bash
 pip uninstall dynabench -y
-pip install git+ssh://git@github.com/badulion/dynabench.git
+pip install git+https://git@github.com/badulion/dynabench.git
 ```

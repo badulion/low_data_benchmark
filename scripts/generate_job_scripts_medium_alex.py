@@ -6,45 +6,60 @@ SUBMIT_SCRIPT = True
 WRITE_SCRIPT = True
 
 # Parameter options
-models = ["grind", "feast", "cnn", "fno", "gat", "gcn", "geo_fno", "graphpde", "neuralPDE", "pointgnn", "pointnet", "ptv1", "ptv3", "resnet"]
+models = ["grind", "feast"] #["cnn", "fno", "resnet", "neuralPDE", "gat", "gcn", "geo_fno", "graphpde", "pointgnn", "pointnet", "ptv1", "ptv3", "grind", "feast"]
 equations = ["advection", "burgers", "gasdynamics", "kuramotosivashinsky", "reactiondiffusion", "wave"]
-resolutions = ["high", "medium", "high", "full"]
-version = '0:1'
-batch = 128
+resolutions = ["medium"] #["low", "medium", "high", "full"]
+version = '0:2'
+batch = 16
 
 # Directory to save job scripts
 output_dir = "sbatch_jobs"
 os.makedirs(output_dir, exist_ok=True)
 
 # Template for the SLURM script
-template = """#!/bin/bash
-#SBATCH -J Dynabench2_{model}_{equation}_{resolution}_{version}
+template = """#!/bin/bash -l
+#
 #SBATCH --output=job_out/output_{model}_{equation}_{resolution}_{version}.log
+#SBATCH --job-name=db2-{model}_{equation}_{resolution}_{version}
+#SBATCH --export=NONE
+#SBATCH --gres=gpu:a40:1
 #SBATCH -c 16
-#SBATCH -p standard
-#SBATCH --gres=gpu:L40:1
-#SBATCH --mem=20G
-#SBATCH --tmp=20G
+#SBATCH --time=24:00:00
 #SBATCH --signal=USR1@100
 #SBATCH --requeue
 
-cd ~/dynabench2
+unset SLURM_EXPORT_ENV
 
-mkdir -p output/status
+export http_proxy=http://proxy:80
+export https_proxy=http://proxy:80
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK
+
+cd ~/DB2_newdb
+
+mkdir -p /home/vault/b190cb/b190cb18/db2_output/status
+
+echo "Copying files to TMP..."
+
+mkdir -p $TMPDIR/data/{equation}/cloud/{resolution}
+cp -r "/home/vault/b190cb/b190cb18/data/{equation}/cloud/{resolution}" "$TMPDIR/data/{equation}/cloud"
+mkdir -p $TMPDIR/data/{equation}/grid/{resolution}
+cp -r "/home/vault/b190cb/b190cb18/data/{equation}/grid/{resolution}" "$TMPDIR/data/{equation}/grid"
+
+echo "Done copying files to TMP\n"
 
 source env/bin/activate
 
 # Auto-requeue handler
 requeue_job() {{
     echo "Requeuing job..."
-    touch output/status/{model}:{equation}:{resolution}:{version}:requeue.txt
 }}
 trap requeue_job USR1
 
 # Path to status file created when training finishes
-STATUS_FILE=output/status/{model}:{equation}:{resolution}:{version}.txt
+STATUS_FILE=/home/vault/b190cb/b190cb18/db2_output/status/{model}:{equation}:{resolution}:{version}.txt
 
-srun python main.py MODEL={model} equation={equation} resolution={resolution} version={version} Batch_size={batch} Epochs=10 Base_path_data=/data/42-julia-hpc-rz-lsx/s391057/dynabench
+srun python main.py model={model} equation={equation} resolution={resolution} version={version} Batch_size={batch} Epochs=10 Base_path_data=$TMPDIR/data output_dir=/home/vault/b190cb/b190cb18/db2_output
 
 sleep 10
 

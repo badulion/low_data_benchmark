@@ -19,7 +19,7 @@ logger:
     save_dir: ${output_dir}/csv_logs
     name: ${logdir}
   - _target_: pytorch_lightning.loggers.WandbLogger
-    project: dynabench2-tests
+    project: dynabench2-${wandblog}
     save_dir: ${output_dir}/wandb_logs
     name: ${logdir}
     settings:

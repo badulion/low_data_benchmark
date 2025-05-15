@@ -1,8 +1,8 @@
 data
 output
+results
 env
 venv
-scripts
 sbatch_jobs
 errors.txt
 __pycache__
