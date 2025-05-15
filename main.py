@@ -134,8 +134,8 @@ class pl_wrapper(pl.LightningModule):
         x = batch['x']
         y = batch['y']
         p = batch['pos']
-        if 'knn_graph' in batch.keys():
-            edge_index = batch['knn_graph']
+        if 'edgelist' in batch.keys():
+            edge_index = batch['edgelist']
         else:
             edge_index = None
 
