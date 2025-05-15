@@ -5,7 +5,7 @@ import natsort
 import matplotlib.pyplot as plt
 import re
 
-def process_csv_files(data_directory='data/', plot=False):
+def process_csv_files(data_directory='results/low', plot=False):
     # Dictionary to hold data from each subdirectory
     data_frames = {}
 
