@@ -4,10 +4,12 @@ import numpy as np
 import natsort
 import matplotlib.pyplot as plt
 import re
+import yaml
 
-def process_csv_files(data_directory='results/low', plot=False):
+def process_csv_files(data_directory='../../results/low', safe_dir='.', plot=False):
     # Dictionary to hold data from each subdirectory
     data_frames = {}
+    hparams = {}
 
     # Walk through all subdirectories and gather CSV files
     for root, dirs, files in os.walk(data_directory):
@@ -27,36 +29,62 @@ def process_csv_files(data_directory='results/low', plot=False):
                 else:
                     # Create a new entry if it doesn't exist
                     data_frames[subdir_name] = df
+            if file.endswith('.yaml'):
+                subdir_name = os.path.basename(os.path.dirname(root))
+                file_path = os.path.join(root, file)
+                with open(f'{file_path}', 'r') as file:
+                    data = yaml.safe_load(file)
+                hparams[subdir_name] = data
+
 
     # Initialize a list to store processed data for the final DataFrame
     processed_data = []
 
     # Process each DataFrame in the dictionary
-    for name, df in data_frames.items():
+    for df, hparam in zip(data_frames.items(), hparams.values()):
+        name, df = df
         # Create a dictionary to hold the original data along with computed mean and std
-        summary_dict = {'subdir_name': name}
+        s = name.split(':')
+        if len(s[0].split('_')) == 3:
+            temp = s[0].split('_')
+            dataset, model = temp[0], f'{temp[1]}_{temp[2]}'
+        else:
+            dataset, model = s[0].split('_')
+        equation = s[1]
+        resolution = s[2]
+        version = f'{s[3]}:{s[4]}'
+        summary_dict = {}
+
+        summary_dict['dataset'] = dataset
+        summary_dict['model'] = model
+        summary_dict['equation'] = equation
+        summary_dict['domain'] = hparam['hparams']['Structure']
+        summary_dict['params'] = hparam['trainable_parameters']
+        summary_dict['resolution'] = resolution
+        summary_dict['version'] = version
 
         # Iterate over columns to calculate statistics for columns with multiple non-NaN values
         for col in df.columns:
             if 'step' in col or 'epoch' in col or 'val_loss' in col or 'train_loss' in col:
-                continue
-            if 'test_loss' in col and plot==False:
-                if 'test_loss-1' == col or 'test_loss-16' == col:
+                if 'train_step' in col:
                     pass
                 else:
                     continue
+            if col == 'test_loss':
+                continue
+            if 'test' in col or 'train' and plot==False:
+                pass
+            else:
+                continue
             # Filter out NaN values for the column
             valid_values = df[col].dropna()
 
-            # Store original values in the summary dictionary
-            # summary_dict[f"{col}_original_values"] = list(valid_values)
-
             # If there are multiple valid values, compute mean and std; otherwise, set to NaN
-            if len(valid_values) > 1:
+            if len(valid_values) > 1 and 'test' not in col:
                 summary_dict[f"{col}_mean"] = valid_values.mean()
                 summary_dict[f"{col}_std"] = valid_values.std()
             else:
-                summary_dict[f"{col}"] = valid_values.iloc[0] if len(valid_values) == 1 else np.nan
+                summary_dict[f"{col}"] = valid_values.iloc[0]
 
         # Append the summary to the processed data list
         processed_data.append(summary_dict)
@@ -67,9 +95,11 @@ def process_csv_files(data_directory='results/low', plot=False):
 
     # Reset index for a clean look and save the DataFrame to an Excel file
     result_df.reset_index(inplace=True)
-    result_df.rename(columns={'index': 'column_name'}, inplace=True)
-    result_df.set_index('subdir_name', inplace=True)
-    result_df.to_csv("evaluation/aggregated_data.csv", index=True)
+    result_df.set_index('domain', inplace=True)
+    result_df.sort_index(inplace=True)
+    result_df.drop(columns=['index'], inplace=True)
+
+    result_df.to_csv(f"{safe_dir}/aggregated_data.csv", index=True)
 
     print("Data aggregated and saved to 'aggregated_data.csv'.")
 
@@ -96,4 +126,4 @@ def process_csv_files(data_directory='results/low', plot=False):
         plt.show()
 
 # Run the function
-process_csv_files(f'{os.getcwd()}/evaluation/data', plot=True)
+process_csv_files(f'{os.getcwd()}/results/low', safe_dir=f'{os.getcwd()}/results', plot=False)
