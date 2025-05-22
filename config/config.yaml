@@ -14,7 +14,7 @@ defaults:
   - model@point_wrapper: point_wrapper
   - model@graph_wrapper: graph_wrapper
   - model@no_wrapper: no_wrapper
-  - model: ptv1
+  - model: cnn
   - _self_
 
 # Model
@@ -50,8 +50,7 @@ LearningRate: 1e-3
 WeightDecay: 1e-6
 
 # Trainer
-ValCheckInterval: 0.25
-# -> Remove for final run
+ValCheckInterval: 1.0
 test_batches: 1.0
 val_batches: 1.0
 train_batches: 1.0
