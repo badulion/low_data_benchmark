@@ -67,7 +67,7 @@ class DynabenchDataModule(LightningDataModule):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False)
@@ -200,8 +200,7 @@ class pl_wrapper(pl.LightningModule):
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def main(cfg : DictConfig) -> None:
 
-    # wandb_key = f"{os.getenv('WANDBKEY')}"
-    wandb_key = "6813c95f67c8b605e828ee3aba39eeec4b0ebad4"
+    wandb_key = f"{os.getenv('WANDBKEY')}"
     wandbloggedin = wandb.login(key = wandb_key, relogin=True)
 
     print(cfg.model.name)

@@ -14,7 +14,7 @@ defaults:
   - model@point_wrapper: point_wrapper
   - model@graph_wrapper: graph_wrapper
   - model@no_wrapper: no_wrapper
-  - model: cnn
+  - model: zero_cloud
   - _self_
 
 # Model
@@ -43,7 +43,7 @@ TestRollout: 16
 Workers: 16
 
 # Training
-device: gpu
+device: cpu
 
 Epochs: 10
 LearningRate: 1e-3
