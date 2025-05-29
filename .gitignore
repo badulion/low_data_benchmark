@@ -1,6 +1,7 @@
 data
 output
 results
+scripts
 env
 venv
 sbatch_jobs
