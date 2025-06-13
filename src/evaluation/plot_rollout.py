@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 
-RES = ["low","medium","full","high"]  # Low, Medium, High, Full Resolution
+RES = ["high"]  # Low, Medium, High, Full Resolution
 EQ = ["A","B","GD","KS","RD","W"]  # Advection, Burgers, Gas Dynamics, Kuramoto-Sivashinsky, Reaction-Diffusion, Wave
 
 metrics = [f'test_loss-{i}' for i in range(1, 17)]
@@ -40,7 +40,7 @@ model_map = {
     'gcn': 'GCN',
     'feast': 'FeaStNet',
     'zero_cloud': 'zero',
-    'persistance_cloud': 'persistance'
+    'persistance_cloud': 'persistence'
 }
 
 # Load and clean data
@@ -64,7 +64,7 @@ for res in RES:
 
         #print(df_filtered)
 
-        plt.figure(figsize=(10, 5.7))
+        plt.figure(figsize=(12, 5.7))
 
         # Filter only the step columns (assuming they are named like "step1", "step2", ..., or similar)
         step_columns = natsort.natsorted([col for col in df_filtered.columns if col.startswith('test_loss-')])
@@ -74,7 +74,7 @@ for res in RES:
         for _, row in df_filtered.iterrows():
             # if row['model'] in ['GrINd', 'PTv1', 'PTv3', 'PointNet', 'PointGNN', 'GraphPDE', 'GAT', 'GCN', 'FeaStNet', 'GeoFNO'] and row['domain'] == 'grid':
             #     continue
-            if row['model'] in ['zero', 'persistance']:
+            if row['model'] in ['zero', 'persistence']:
                 label = f"{row['model']} - basline"
             else:
                 label = f"{row['model']} - {row['domain']}"
@@ -101,24 +101,54 @@ for res in RES:
         color_cycle = itertools.cycle(plt.cm.tab20.colors)  # or use another colormap if you prefer
         group_colors = {}
         for group_key in grouped:
-            group_colors[group_key] = next(color_cycle)
+            if group_key[:4] in ["zero", "pers"]:
+                group_colors[group_key] = 'black'
+            else:
+                group_colors[group_key] = next(color_cycle)
 
         # Define a list of marker styles
-        marker_styles = ['s', '*', 's', '^', 'v', 'D', 'X', 'P', '<', '>', 'H', 'd', 'p', '|'] #, '_']
+        marker_styles = ['s', '*', 'p', 'D', 'H', '^', 'v', 'X', 'P', '<', '>', 'd', '|'] #, '_']
+        
+        jitter_strength = 0.1
 
         for group_key, group_rows in grouped.items():
             color = group_colors[group_key]
             marker_cycle = itertools.cycle(marker_styles)
+
             for label, values, _ in group_rows:
-                marker = next(marker_cycle)
-                plt.plot(
-                    np.arange(1, len(step_columns) + 1),
-                    values,
-                    label=label,
-                    marker=marker,
-                    linewidth=2,
-                    color=color
-                )
+                if group_key[:4] == "zero":
+                    marker = '|'
+                elif group_key[:4] == "pers":
+                    marker = 'o'
+                else:
+                    marker = next(marker_cycle)
+                if 'grid' in label.lower():
+                    alpha = 1.0
+                else:
+                    alpha = 1.0
+
+                if marker == '*':
+                    plt.plot(
+                        np.arange(1, len(step_columns) + 1), # + np.random.uniform(-jitter_strength, jitter_strength, size=len(step_columns)),
+                        values,
+                        label=label,
+                        marker=marker,
+                        markersize=8,
+                        linewidth=2,
+                        color=color,
+                        alpha=alpha
+                    )
+                else:
+                    plt.plot(
+                        np.arange(1, len(step_columns) + 1), # + np.random.uniform(-jitter_strength, jitter_strength, size=len(step_columns)),
+                        values,
+                        label=label,
+                        marker=marker,
+                        markersize=5,
+                        linewidth=2,
+                        color=color,
+                        alpha=alpha
+                    )
 
         # # Create an infinite cycle of markers if there are more lines than markers
         # marker_cycle = itertools.cycle(marker_styles)
@@ -129,18 +159,18 @@ for res in RES:
 
 
         # Axis labels, title, legend
-        # ToDo 
+        # ToDo
         # use gitter to pull lines apart in plot
         # bigger stars
-        plt.xlabel("Number of Steps")
-        plt.ylabel("MSE")
+        plt.xlabel("Number of Steps", fontsize=14)
+        plt.ylabel("MSE", fontsize=14)
         plt.yscale("log")
         plt.xticks(np.arange(1, len(step_columns) + 1))
-        plt.ylim(bottom=min_v - 1e-7, top=2.5)
+        plt.ylim(bottom=min_v - 1e-7, top=3)
         plt.xlim(left=0.8, right=len(step_columns)+0.2)
         plt.title(rf"Test Loss vs. Number of Steps for $\bf{{{eq}}}$ Equation", fontsize=14)
-        plt.legend(fontsize='small', bbox_to_anchor=(1.02, 1.005), loc='upper left')
-        plt.grid(True)
+        plt.legend(ncol=2, fontsize=13, bbox_to_anchor=(1.02, 1.005), loc='upper left')
+        plt.grid(True, which='major', axis='y')
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, f'test_loss_vs_steps_{eq}_{res}.png'), bbox_inches='tight', dpi=300)
         #plt.show()
