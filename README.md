@@ -1,4 +1,5 @@
-# Dynabench - Low-Data Benchmark
+# Low-Data Benchmark
+## Evaluating Spatiotemporal Prediction Models in a Low-Data Regime.
 
 ![Dynabench 2.0 Overview](figures/dynabench2.png)
 
