@@ -90,7 +90,7 @@ def process_csv_files(data_directory='../../results/low', safe_dir='.'):
         summary_dict = {}
 
         #summary_dict['dataset'] = dataset
-        summary_dict['model'] = model.lower().replace('_', ' ')
+        summary_dict['model'] = model.lower() #.replace('_', ' ')
         summary_dict['version'] = version
         summary_dict['equation'] = equation
         summary_dict['resolution'] = resolution

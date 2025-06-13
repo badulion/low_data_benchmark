@@ -21,16 +21,16 @@ def build_latex_table(csv_file, output_dir, res, metrics, underline):
     # Filter required columns
     df_filtered = df[['model', 'domain', 'equation'] + metrics].copy()
 
-    df_filtered = df_filtered[df['resolution'] == res]
+    # df_filtered = df_filtered[df['resolution'] == res]
     
     # Helper to format values
     def format_val(val, metric) -> str:
         if pd.isna(val):
             return "-"
-        if 'loss' in metric and val > 10:
+        if 'loss' in metric and val > 2:
             return r"\text{div}"
         if metric in ['test_time', 'train_step_ms_mean']:
-            return rf"\num{{{np.float64(val):.0f}}}"
+            return rf"\num{{{np.float64(val):.1f}}}"
         try:
             if val > 10.0:
                 return rf"\num{{{np.float64(val)}}}"
@@ -103,21 +103,78 @@ def build_latex_table(csv_file, output_dir, res, metrics, underline):
 
         print(f"Saved LaTeX table to {filename}")
 
+def build_summary_table(csv_file, output_dir, res_list, metric):
+    df = pd.read_csv(csv_file)
+    equation_map = {
+        'advection': 'A',
+        'burgers': 'B',
+        'gasdynamics': 'GD',
+        'kuramotosivashinsky': 'KS',
+        'reactiondiffusion': 'RD',
+        'wave': 'W',
+    }
+    df['equation'] = df['equation'].map(lambda x: equation_map.get(x.lower(), x))
+    df['domain'] = df['domain']
+
+    summary = {}
+    for res in res_list:
+        # Filter by resolution if you have a 'resolution' column
+        df_res = df[df['resolution'] == res]
+        df_res = df_res.copy()  # If you don't have a 'resolution' column, remove this line and filtering
+
+        # Remove unwanted models
+        if metric in ["params", "batch_size", "train_step_ms_mean", "test_time"]:
+            df_res = df_res[~df_res['model'].isin(['persistance_cloud', 'persistance_grid', 'zero_cloud', 'zero_grid'])]
+
+        # Group by model, average over all equations and domains
+        avg = df_res.groupby(['model', 'domain'])[metric].mean()
+        summary[res] = avg
+
+    # Build DataFrame: rows=models, columns=resolutions
+    summary_df = pd.DataFrame(summary)
+    print(summary_df)
+    summary_df = summary_df.loc[sorted(summary_df.index)]  # Sort models alphabetically
+
+    # Format values for LaTeX
+    def format_val(val):
+        if pd.isna(val):
+            return "-"
+        try:
+            if val > 10.0:
+                return rf"\num{{{np.float64(val):.1f}}}"
+            else:
+                return rf"\num{{{np.float64(val):.2e}}}"
+        except:
+            return str(val)
+
+    formatted_df = summary_df.applymap(format_val)
+
+    # Build LaTeX table
+    header_cols = ['model'] + list(formatted_df.columns)
+    header_line = ' & '.join(header_cols) + r" \\"
+    rows = []
+    for (model, domain), row in formatted_df.iterrows():
+        row_vals = [model, domain] + [row[res] for res in formatted_df.columns]
+        rows.append(' & '.join(row_vals) + r" \\")
+    latex = "\\toprule \n" + header_line + "\n\\midrule \n" + "\n".join(rows) + "\n\\bottomrule"
+
+    # Save to .txt file
+    filename = f"{output_dir}/summary_table_{metric}.txt"
+    with open(filename, "w") as f:
+        f.write(latex.strip())
+    print(f"Saved summary LaTeX table to {filename}")
+
 
 if __name__ == "__main__":
-
-    RES = ["low", "medium", "high", "full"]  # Resolutions to process
-
-    metrics = ['test_loss-1', 'test_loss-16', 'test_time', 'train_step_ms_mean', 'batch_size', 'params']
-    UNDERLINE = [True,True,True,True,False,False]  # Whether to underline the minimum value in each column
-    
-    # Load CSV
-    csv_file = 'results/low_data_benchmark_results.csv'  # Replace with your actual CSV path
-    output_dir = 'results/latex_tables'  # Directory to save separate tables
+    RES = ["low", "medium", "high", "full"]
+    metrics = ['test_time']
+    UNDERLINE = [True,True,True,True,False,False]
+    csv_file = 'results/aggregated_data.csv'
+    output_dir = 'results/latex_tables'
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    
-    for res in RES:
-        build_latex_table(csv_file, output_dir, res=res, metrics=metrics, underline=UNDERLINE)
-        print(f"Latex tables for resolution '{RES}' have been built and saved in '{output_dir}'.")
+
+    # Build summary tables for each metric
+    for metric in metrics:
+        build_summary_table(csv_file, output_dir, RES, metric)

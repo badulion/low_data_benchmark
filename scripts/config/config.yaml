@@ -1,9 +1,4 @@
 # Configure job submission
-# alex:
-# output_path: /home/vault/b190cb/b190cb18/output
-
-#julia2
-# output_path: /home/s391057/output
 
 output_path: output
 template_file: julia_template.sh
