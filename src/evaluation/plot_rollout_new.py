@@ -55,7 +55,8 @@ DF_filtered = df[['model', 'domain', 'equation', 'resolution'] + metrics].copy()
 
 # Choose 3 equations to plot
 EQS_TO_PLOT = [["A", "B", "GD"], ["KS","RD","W"]]  # Change as needed
-
+FS_SMALL = 16
+FS_BIG = 18
 
 
 for res in RES:
@@ -142,17 +143,20 @@ for res in RES:
                         all_labels.append(label)
 
                 ax.set_yscale("log")
-                ax.set_ylabel("MSE", fontsize=13)
+                ax.set_ylabel("MSE", fontsize=FS_SMALL)
                 ax.set_ylim(bottom=min_v - 1e-7, top=20)
                 ax.set_xlim(left=0.8, right=len(step_columns)+0.2)
-                ax.set_title(rf"Test Loss vs. Number of Steps for $\bf{{{eq}}}$ Equation", fontsize=14)
+                # set y ticks fontsize
+                ax.tick_params(axis='y', labelsize=FS_SMALL)
+
+                ax.set_title(rf"Test Loss vs. Number of Steps for $\bf{{{eq}}}$ Equation", fontsize=FS_BIG)
                 ax.grid(True, which='major', axis='y')
 
-        axes[-1].set_xlabel("Number of Steps", fontsize=14)
-        plt.xticks(np.arange(1, len(step_columns) + 1))
+        axes[-1].set_xlabel("Number of Steps", fontsize=FS_SMALL)
+        plt.xticks(np.arange(1, len(step_columns) + 1), fontsize=FS_SMALL)
 
         # Place the legend to the right of the plots
-        fig.legend(all_handles, all_labels, ncol=1, fontsize=12, bbox_to_anchor=(1.02, 0.5), loc='center left')
+        fig.legend(all_handles, all_labels, ncol=1, fontsize=FS_SMALL, bbox_to_anchor=(1.02, 0.5), loc='center left')
         plt.tight_layout(pad=3)  # Leave space for legend
         print(f"Saving {f'test_loss_vs_steps_{res}_{'_'.join(eq2plot)}.png'} ...")
         plt.savefig(os.path.join(output_dir, f'test_loss_vs_steps_{res}_{'_'.join(eq2plot)}.png'), bbox_inches='tight', dpi=300)
